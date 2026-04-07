@@ -1,0 +1,10 @@
+{
+  "expo": {
+    "name": "SUPCONTENT",
+    "slug": "supcontent",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "scheme": "supcontent",
+    "platforms": ["ios", "android"]
+  }
+}

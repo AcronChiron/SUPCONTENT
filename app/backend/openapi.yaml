@@ -1,0 +1,1943 @@
+openapi: 3.0.3
+info:
+  title: SUPCONTENT API
+  description: |
+    API REST du réseau social musical SUPCONTENT — l'Instagram de la musique.
+    
+    ## Authentification
+    La majorité des endpoints nécessitent un token JWT Bearer.
+    Les endpoints publics (consultation) sont accessibles sans authentification.
+    
+    ## Sources de données
+    - **Last.fm API** : Métadonnées des artistes, albums, titres (proxy via backend)
+    - **YouTube iframe API** : Streaming embarqué côté client via videoId fourni par le backend
+    
+    ## Rôles
+    - `USER` : Utilisateur standard authentifié
+    - `ADMIN` : Administrateur avec droits de modération
+  version: 1.0.0
+  contact:
+    name: Équipe SUPCONTENT
+    email: dev@supcontent.io
+
+servers:
+  - url: http://localhost:3000/api/v1
+    description: Serveur de développement local
+  - url: https://api.supcontent.io/v1
+    description: Production
+
+tags:
+  - name: Auth
+    description: Authentification et gestion de session
+  - name: Users
+    description: Profils utilisateurs et relations sociales
+  - name: Music
+    description: Proxy vers Last.fm — artistes, albums, titres
+  - name: Library
+    description: Bibliothèque personnelle et listes
+  - name: Reviews
+    description: Critiques et notes
+  - name: Feed
+    description: Fil d'actualité social
+  - name: Messages
+    description: Messagerie privée entre utilisateurs
+  - name: Notifications
+    description: Système de notifications temps réel
+  - name: Admin
+    description: Actions de modération (rôle ADMIN requis)
+  - name: Export
+    description: Export RGPD des données personnelles
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    # ─── AUTH ───────────────────────────────────────────────────────────────
+    RegisterRequest:
+      type: object
+      required: [email, username, password]
+      properties:
+        email:
+          type: string
+          format: email
+          example: john.doe@example.com
+        username:
+          type: string
+          minLength: 3
+          maxLength: 30
+          example: johndoe
+        password:
+          type: string
+          minLength: 8
+          example: P@ssw0rd!
+
+    LoginRequest:
+      type: object
+      required: [email, password]
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+
+    AuthResponse:
+      type: object
+      properties:
+        accessToken:
+          type: string
+          description: JWT valide 15 minutes
+        refreshToken:
+          type: string
+          description: JWT valide 30 jours (httpOnly cookie)
+        user:
+          $ref: '#/components/schemas/UserPublic'
+
+    # ─── USER ───────────────────────────────────────────────────────────────
+    UserPublic:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        username:
+          type: string
+        avatarUrl:
+          type: string
+          format: uri
+          nullable: true
+        bio:
+          type: string
+          nullable: true
+        websiteUrl:
+          type: string
+          format: uri
+          nullable: true
+        role:
+          type: string
+          enum: [USER, ADMIN]
+        followersCount:
+          type: integer
+        followingCount:
+          type: integer
+        isFollowedByMe:
+          type: boolean
+          description: Présent uniquement si authentifié
+        createdAt:
+          type: string
+          format: date-time
+
+    UserUpdateRequest:
+      type: object
+      properties:
+        username:
+          type: string
+          minLength: 3
+          maxLength: 30
+        bio:
+          type: string
+          maxLength: 500
+        websiteUrl:
+          type: string
+          format: uri
+        theme:
+          type: string
+          enum: [LIGHT, DARK]
+        language:
+          type: string
+          enum: [fr, en, es, de]
+
+    # ─── MUSIC (Last.fm proxy) ──────────────────────────────────────────────
+    Artist:
+      type: object
+      properties:
+        lastfmId:
+          type: string
+          description: MBID ou nom normalisé Last.fm
+          example: "b10bbbfc-cf9e-42e0-be17-e2c3e1d2600d"
+        name:
+          type: string
+          example: Daft Punk
+        imageUrl:
+          type: string
+          format: uri
+        bio:
+          type: string
+        tags:
+          type: array
+          items:
+            type: string
+          example: [electronic, french house, dance]
+        similarArtists:
+          type: array
+          items:
+            type: object
+            properties:
+              name:
+                type: string
+              imageUrl:
+                type: string
+        stats:
+          type: object
+          properties:
+            listeners:
+              type: integer
+            playcount:
+              type: integer
+        supcontent:
+          $ref: '#/components/schemas/SupcontentStats'
+
+    Album:
+      type: object
+      properties:
+        lastfmId:
+          type: string
+        mbid:
+          type: string
+          nullable: true
+        name:
+          type: string
+          example: Random Access Memories
+        artistName:
+          type: string
+          example: Daft Punk
+        imageUrl:
+          type: string
+          format: uri
+        releaseDate:
+          type: string
+          format: date
+          nullable: true
+        tags:
+          type: array
+          items:
+            type: string
+        tracks:
+          type: array
+          items:
+            $ref: '#/components/schemas/Track'
+        supcontent:
+          $ref: '#/components/schemas/SupcontentStats'
+
+    Track:
+      type: object
+      properties:
+        lastfmId:
+          type: string
+        name:
+          type: string
+          example: Get Lucky
+        artistName:
+          type: string
+        albumName:
+          type: string
+          nullable: true
+        duration:
+          type: integer
+          description: Durée en secondes
+          nullable: true
+        youtubeVideoId:
+          type: string
+          description: ID YouTube pour l'iframe de streaming
+          nullable: true
+          example: 5NV6Rdv1h3Jk
+        imageUrl:
+          type: string
+          format: uri
+          nullable: true
+        supcontent:
+          $ref: '#/components/schemas/SupcontentStats'
+
+    SupcontentStats:
+      type: object
+      description: Données communautaires SUPCONTENT enrichissant la fiche Last.fm
+      properties:
+        avgRating:
+          type: number
+          format: float
+          minimum: 0
+          maximum: 5
+          nullable: true
+        reviewCount:
+          type: integer
+        inLibraryCount:
+          type: integer
+        myRating:
+          type: integer
+          nullable: true
+          description: Note de l'utilisateur connecté (1-5), null si non noté
+        myStatus:
+          type: string
+          enum: [TO_LISTEN, LISTENING, DONE, ABANDONED]
+          nullable: true
+
+    SearchResults:
+      type: object
+      properties:
+        artists:
+          type: array
+          items:
+            $ref: '#/components/schemas/Artist'
+        albums:
+          type: array
+          items:
+            $ref: '#/components/schemas/Album'
+        tracks:
+          type: array
+          items:
+            $ref: '#/components/schemas/Track'
+        users:
+          type: array
+          items:
+            $ref: '#/components/schemas/UserPublic'
+        lists:
+          type: array
+          items:
+            $ref: '#/components/schemas/CustomList'
+
+    # ─── LIBRARY ────────────────────────────────────────────────────────────
+    LibraryItem:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        externalId:
+          type: string
+          description: ID Last.fm (artiste, album ou track)
+        mediaType:
+          type: string
+          enum: [ARTIST, ALBUM, TRACK]
+        status:
+          type: string
+          enum: [TO_LISTEN, LISTENING, DONE, ABANDONED]
+        rating:
+          type: integer
+          minimum: 1
+          maximum: 5
+          nullable: true
+        notes:
+          type: string
+          nullable: true
+        addedAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+        media:
+          oneOf:
+            - $ref: '#/components/schemas/Artist'
+            - $ref: '#/components/schemas/Album'
+            - $ref: '#/components/schemas/Track'
+
+    LibraryItemUpsertRequest:
+      type: object
+      required: [externalId, mediaType]
+      properties:
+        externalId:
+          type: string
+        mediaType:
+          type: string
+          enum: [ARTIST, ALBUM, TRACK]
+        status:
+          type: string
+          enum: [TO_LISTEN, LISTENING, DONE, ABANDONED]
+          default: TO_LISTEN
+        rating:
+          type: integer
+          minimum: 1
+          maximum: 5
+          nullable: true
+        notes:
+          type: string
+          maxLength: 1000
+          nullable: true
+
+    LibraryStats:
+      type: object
+      properties:
+        totalItems:
+          type: integer
+        byStatus:
+          type: object
+          properties:
+            TO_LISTEN: { type: integer }
+            LISTENING: { type: integer }
+            DONE: { type: integer }
+            ABANDONED: { type: integer }
+        byType:
+          type: object
+          properties:
+            ARTIST: { type: integer }
+            ALBUM: { type: integer }
+            TRACK: { type: integer }
+        avgRatingGiven:
+          type: number
+          format: float
+          nullable: true
+        topTags:
+          type: array
+          items:
+            type: object
+            properties:
+              tag: { type: string }
+              count: { type: integer }
+
+    CustomList:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+          example: "Mes albums de l'été 2025"
+        description:
+          type: string
+          nullable: true
+        isPublic:
+          type: boolean
+        owner:
+          $ref: '#/components/schemas/UserPublic'
+        itemCount:
+          type: integer
+        coverImages:
+          type: array
+          items:
+            type: string
+            format: uri
+          maxItems: 4
+          description: Pochettes des 4 premiers items pour l'aperçu
+        createdAt:
+          type: string
+          format: date-time
+
+    CustomListWithItems:
+      allOf:
+        - $ref: '#/components/schemas/CustomList'
+        - type: object
+          properties:
+            items:
+              type: array
+              items:
+                $ref: '#/components/schemas/LibraryItem'
+
+    # ─── REVIEWS ────────────────────────────────────────────────────────────
+    Review:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        author:
+          $ref: '#/components/schemas/UserPublic'
+        externalId:
+          type: string
+        mediaType:
+          type: string
+          enum: [ARTIST, ALBUM, TRACK]
+        content:
+          type: string
+        rating:
+          type: integer
+          minimum: 1
+          maximum: 5
+        containsSpoiler:
+          type: boolean
+        likesCount:
+          type: integer
+        commentsCount:
+          type: integer
+        likedByMe:
+          type: boolean
+        isFeatured:
+          type: boolean
+          description: Mis en avant par un administrateur
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    ReviewCreateRequest:
+      type: object
+      required: [externalId, mediaType, content, rating]
+      properties:
+        externalId:
+          type: string
+        mediaType:
+          type: string
+          enum: [ARTIST, ALBUM, TRACK]
+        content:
+          type: string
+          minLength: 10
+          maxLength: 5000
+        rating:
+          type: integer
+          minimum: 1
+          maximum: 5
+        containsSpoiler:
+          type: boolean
+          default: false
+
+    Comment:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        author:
+          $ref: '#/components/schemas/UserPublic'
+        content:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+
+    # ─── FEED ───────────────────────────────────────────────────────────────
+    FeedActivity:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        type:
+          type: string
+          enum: [REVIEW_PUBLISHED, LIBRARY_ADD, LIBRARY_STATUS_UPDATE, LIST_CREATED, LIST_ITEM_ADDED]
+        actor:
+          $ref: '#/components/schemas/UserPublic'
+        review:
+          $ref: '#/components/schemas/Review'
+          nullable: true
+        libraryItem:
+          $ref: '#/components/schemas/LibraryItem'
+          nullable: true
+        list:
+          $ref: '#/components/schemas/CustomList'
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+
+    # ─── MESSAGES ───────────────────────────────────────────────────────────
+    Conversation:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        participant:
+          $ref: '#/components/schemas/UserPublic'
+        lastMessage:
+          $ref: '#/components/schemas/Message'
+          nullable: true
+        unreadCount:
+          type: integer
+
+    Message:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        senderId:
+          type: string
+          format: uuid
+        content:
+          type: string
+        readAt:
+          type: string
+          format: date-time
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+
+    # ─── NOTIFICATIONS ──────────────────────────────────────────────────────
+    Notification:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        type:
+          type: string
+          enum: [NEW_LIKE, NEW_COMMENT, NEW_FOLLOWER, NEW_RELEASE]
+        isRead:
+          type: boolean
+        payload:
+          type: object
+          description: Données contextuelles variables selon le type
+        createdAt:
+          type: string
+          format: date-time
+
+    # ─── ERRORS ─────────────────────────────────────────────────────────────
+    Error:
+      type: object
+      properties:
+        statusCode:
+          type: integer
+        error:
+          type: string
+        message:
+          type: string
+
+    Paginated:
+      type: object
+      properties:
+        data:
+          type: array
+          items: {}
+        meta:
+          type: object
+          properties:
+            total: { type: integer }
+            page: { type: integer }
+            perPage: { type: integer }
+            totalPages: { type: integer }
+
+  parameters:
+    PageParam:
+      name: page
+      in: query
+      schema:
+        type: integer
+        default: 1
+    PerPageParam:
+      name: perPage
+      in: query
+      schema:
+        type: integer
+        default: 20
+        maximum: 100
+    UsernameParam:
+      name: username
+      in: path
+      required: true
+      schema:
+        type: string
+    ReviewIdParam:
+      name: reviewId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+
+  responses:
+    Unauthorized:
+      description: Token JWT manquant ou invalide
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    Forbidden:
+      description: Droits insuffisants
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    NotFound:
+      description: Ressource introuvable
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+
+security:
+  - BearerAuth: []
+
+paths:
+  # ═══════════════════════════════════════════════════════════════════════════
+  # AUTH
+  # ═══════════════════════════════════════════════════════════════════════════
+  /auth/register:
+    post:
+      tags: [Auth]
+      summary: Créer un compte
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegisterRequest'
+      responses:
+        '201':
+          description: Compte créé
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        '409':
+          description: Email ou username déjà utilisé
+
+  /auth/login:
+    post:
+      tags: [Auth]
+      summary: Se connecter
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+      responses:
+        '200':
+          description: Connexion réussie
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        '401':
+          description: Identifiants invalides
+
+  /auth/oauth/{provider}:
+    get:
+      tags: [Auth]
+      summary: Initier une connexion OAuth2
+      security: []
+      parameters:
+        - name: provider
+          in: path
+          required: true
+          schema:
+            type: string
+            enum: [google, github, facebook]
+      responses:
+        '302':
+          description: Redirection vers le provider OAuth
+
+  /auth/oauth/{provider}/callback:
+    get:
+      tags: [Auth]
+      summary: Callback OAuth2 — échangé le code contre un token
+      security: []
+      parameters:
+        - name: provider
+          in: path
+          required: true
+          schema:
+            type: string
+            enum: [google, github, facebook]
+        - name: code
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Connexion OAuth réussie
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+
+  /auth/refresh:
+    post:
+      tags: [Auth]
+      summary: Rafraîchir le token d'accès
+      security: []
+      description: Utilise le refreshToken (cookie httpOnly)
+      responses:
+        '200':
+          description: Nouveau accessToken
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  accessToken:
+                    type: string
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /auth/logout:
+    post:
+      tags: [Auth]
+      summary: Se déconnecter (invalide le refreshToken)
+      responses:
+        '204':
+          description: Déconnexion réussie
+
+  # ═══════════════════════════════════════════════════════════════════════════
+  # USERS
+  # ═══════════════════════════════════════════════════════════════════════════
+  /users/me:
+    get:
+      tags: [Users]
+      summary: Récupérer son propre profil
+      responses:
+        '200':
+          description: Profil de l'utilisateur connecté
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserPublic'
+    patch:
+      tags: [Users]
+      summary: Mettre à jour son profil
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              allOf:
+                - $ref: '#/components/schemas/UserUpdateRequest'
+                - type: object
+                  properties:
+                    avatar:
+                      type: string
+                      format: binary
+                      description: Fichier image (JPG/PNG, max 5MB)
+      responses:
+        '200':
+          description: Profil mis à jour
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserPublic'
+
+  /users/{username}:
+    get:
+      tags: [Users]
+      summary: Consulter un profil public
+      security: []
+      parameters:
+        - $ref: '#/components/parameters/UsernameParam'
+      responses:
+        '200':
+          description: Profil public
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserPublic'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /users/{username}/followers:
+    get:
+      tags: [Users]
+      summary: Liste des abonnés d'un utilisateur
+      security: []
+      parameters:
+        - $ref: '#/components/parameters/UsernameParam'
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/PerPageParam'
+      responses:
+        '200':
+          description: Liste paginée d'abonnés
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Paginated'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/UserPublic'
+
+  /users/{username}/following:
+    get:
+      tags: [Users]
+      summary: Liste des abonnements d'un utilisateur
+      security: []
+      parameters:
+        - $ref: '#/components/parameters/UsernameParam'
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/PerPageParam'
+      responses:
+        '200':
+          description: Liste paginée d'abonnements
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Paginated'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/UserPublic'
+
+  /users/{username}/follow:
+    post:
+      tags: [Users]
+      summary: Suivre un utilisateur
+      parameters:
+        - $ref: '#/components/parameters/UsernameParam'
+      responses:
+        '204':
+          description: Abonnement créé
+        '409':
+          description: Déjà abonné
+    delete:
+      tags: [Users]
+      summary: Ne plus suivre un utilisateur
+      parameters:
+        - $ref: '#/components/parameters/UsernameParam'
+      responses:
+        '204':
+          description: Abonnement supprimé
+
+  /users/{username}/reviews:
+    get:
+      tags: [Users]
+      summary: Critiques publiées par un utilisateur
+      security: []
+      parameters:
+        - $ref: '#/components/parameters/UsernameParam'
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/PerPageParam'
+      responses:
+        '200':
+          description: Critiques paginées
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Paginated'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/Review'
+
+  # ═══════════════════════════════════════════════════════════════════════════
+  # MUSIC — Proxy Last.fm
+  # ═══════════════════════════════════════════════════════════════════════════
+  /music/search:
+    get:
+      tags: [Music]
+      summary: Recherche unifiée (artistes, albums, titres, users, listes)
+      security: []
+      description: |
+        Interroge Last.fm en temps réel pour les entités musicales. 
+        Résultats mis en cache Redis (TTL 1h). 
+        Enrichis avec les stats communautaires SUPCONTENT.
+      parameters:
+        - name: q
+          in: query
+          required: true
+          schema:
+            type: string
+            minLength: 2
+          example: "Daft Punk"
+        - name: type
+          in: query
+          schema:
+            type: string
+            enum: [all, artist, album, track, user, list]
+            default: all
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 10
+            maximum: 30
+      responses:
+        '200':
+          description: Résultats de recherche
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SearchResults'
+
+  /music/artists/{artistId}:
+    get:
+      tags: [Music]
+      summary: Fiche artiste (Last.fm + stats SUPCONTENT)
+      security: []
+      parameters:
+        - name: artistId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: MBID Last.fm ou nom URL-encodé
+      responses:
+        '200':
+          description: Fiche artiste enrichie
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Artist'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /music/artists/{artistId}/albums:
+    get:
+      tags: [Music]
+      summary: Albums d'un artiste
+      security: []
+      parameters:
+        - name: artistId
+          in: path
+          required: true
+          schema:
+            type: string
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/PerPageParam'
+      responses:
+        '200':
+          description: Liste d'albums paginée
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Paginated'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/Album'
+
+  /music/albums/{albumId}:
+    get:
+      tags: [Music]
+      summary: Fiche album (Last.fm + stats SUPCONTENT + YouTube IDs)
+      security: []
+      parameters:
+        - name: albumId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Fiche album enrichie avec tracklist et youtubeVideoId par track
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Album'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /music/tracks/{trackId}:
+    get:
+      tags: [Music]
+      summary: Fiche titre (Last.fm + youtubeVideoId + stats SUPCONTENT)
+      security: []
+      parameters:
+        - name: trackId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Fiche titre avec ID YouTube pour l'iframe
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Track'
+
+  /music/artists/{artistId}/similar:
+    get:
+      tags: [Music]
+      summary: Artistes similaires (via Last.fm)
+      security: []
+      parameters:
+        - name: artistId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 6
+            maximum: 20
+      responses:
+        '200':
+          description: Liste d'artistes similaires
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Artist'
+
+  /music/chart/artists:
+    get:
+      tags: [Music]
+      summary: Top artistes du moment (Last.fm chart)
+      security: []
+      parameters:
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 20
+            maximum: 50
+      responses:
+        '200':
+          description: Classement des artistes
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Artist'
+
+  /music/chart/tracks:
+    get:
+      tags: [Music]
+      summary: Top titres du moment (Last.fm chart)
+      security: []
+      parameters:
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 20
+      responses:
+        '200':
+          description: Classement des titres
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Track'
+
+  # ═══════════════════════════════════════════════════════════════════════════
+  # LIBRARY
+  # ═══════════════════════════════════════════════════════════════════════════
+  /library:
+    get:
+      tags: [Library]
+      summary: Récupérer sa bibliothèque personnelle
+      parameters:
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [TO_LISTEN, LISTENING, DONE, ABANDONED]
+        - name: mediaType
+          in: query
+          schema:
+            type: string
+            enum: [ARTIST, ALBUM, TRACK]
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/PerPageParam'
+      responses:
+        '200':
+          description: Bibliothèque paginée
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Paginated'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/LibraryItem'
+    put:
+      tags: [Library]
+      summary: Ajouter ou mettre à jour une entrée dans sa bibliothèque
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LibraryItemUpsertRequest'
+      responses:
+        '200':
+          description: Entrée créée ou mise à jour
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LibraryItem'
+
+  /library/stats:
+    get:
+      tags: [Library]
+      summary: Statistiques de sa bibliothèque (tableau de bord)
+      responses:
+        '200':
+          description: Statistiques agrégées
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LibraryStats'
+
+  /library/{itemId}:
+    delete:
+      tags: [Library]
+      summary: Retirer une entrée de sa bibliothèque
+      parameters:
+        - name: itemId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Entrée supprimée
+
+  /users/{username}/library:
+    get:
+      tags: [Library]
+      summary: Consulter la bibliothèque publique d'un utilisateur
+      security: []
+      parameters:
+        - $ref: '#/components/parameters/UsernameParam'
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [TO_LISTEN, LISTENING, DONE, ABANDONED]
+        - name: mediaType
+          in: query
+          schema:
+            type: string
+            enum: [ARTIST, ALBUM, TRACK]
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/PerPageParam'
+      responses:
+        '200':
+          description: Bibliothèque publique paginée
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Paginated'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/LibraryItem'
+
+  /lists:
+    get:
+      tags: [Library]
+      summary: Récupérer ses listes personnalisées
+      responses:
+        '200':
+          description: Listes de l'utilisateur
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/CustomList'
+    post:
+      tags: [Library]
+      summary: Créer une liste personnalisée
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name]
+              properties:
+                name:
+                  type: string
+                  maxLength: 100
+                description:
+                  type: string
+                  maxLength: 500
+                isPublic:
+                  type: boolean
+                  default: false
+      responses:
+        '201':
+          description: Liste créée
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CustomList'
+
+  /lists/{listId}:
+    get:
+      tags: [Library]
+      summary: Consulter une liste avec ses items
+      security: []
+      parameters:
+        - name: listId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Liste avec items
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CustomListWithItems'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    patch:
+      tags: [Library]
+      summary: Modifier une liste
+      parameters:
+        - name: listId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name: { type: string }
+                description: { type: string }
+                isPublic: { type: boolean }
+      responses:
+        '200':
+          description: Liste mise à jour
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CustomList'
+    delete:
+      tags: [Library]
+      summary: Supprimer une liste
+      parameters:
+        - name: listId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Liste supprimée
+
+  /lists/{listId}/items:
+    post:
+      tags: [Library]
+      summary: Ajouter un item à une liste
+      parameters:
+        - name: listId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [externalId, mediaType]
+              properties:
+                externalId: { type: string }
+                mediaType:
+                  type: string
+                  enum: [ARTIST, ALBUM, TRACK]
+      responses:
+        '201':
+          description: Item ajouté
+
+  /lists/{listId}/items/{externalId}:
+    delete:
+      tags: [Library]
+      summary: Retirer un item d'une liste
+      parameters:
+        - name: listId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: externalId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '204':
+          description: Item retiré
+
+  # ═══════════════════════════════════════════════════════════════════════════
+  # REVIEWS
+  # ═══════════════════════════════════════════════════════════════════════════
+  /reviews:
+    post:
+      tags: [Reviews]
+      summary: Publier une critique
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReviewCreateRequest'
+      responses:
+        '201':
+          description: Critique publiée
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Review'
+
+  /reviews/{reviewId}:
+    get:
+      tags: [Reviews]
+      summary: Consulter une critique
+      security: []
+      parameters:
+        - $ref: '#/components/parameters/ReviewIdParam'
+      responses:
+        '200':
+          description: Critique complète
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Review'
+    patch:
+      tags: [Reviews]
+      summary: Modifier sa critique
+      parameters:
+        - $ref: '#/components/parameters/ReviewIdParam'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                content: { type: string, minLength: 10, maxLength: 5000 }
+                rating: { type: integer, minimum: 1, maximum: 5 }
+                containsSpoiler: { type: boolean }
+      responses:
+        '200':
+          description: Critique mise à jour
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Review'
+    delete:
+      tags: [Reviews]
+      summary: Supprimer sa critique
+      parameters:
+        - $ref: '#/components/parameters/ReviewIdParam'
+      responses:
+        '204':
+          description: Critique supprimée
+
+  /reviews/{reviewId}/like:
+    post:
+      tags: [Reviews]
+      summary: Liker une critique
+      parameters:
+        - $ref: '#/components/parameters/ReviewIdParam'
+      responses:
+        '204':
+          description: Like ajouté
+    delete:
+      tags: [Reviews]
+      summary: Retirer son like
+      parameters:
+        - $ref: '#/components/parameters/ReviewIdParam'
+      responses:
+        '204':
+          description: Like retiré
+
+  /reviews/{reviewId}/comments:
+    get:
+      tags: [Reviews]
+      summary: Commentaires d'une critique
+      security: []
+      parameters:
+        - $ref: '#/components/parameters/ReviewIdParam'
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/PerPageParam'
+      responses:
+        '200':
+          description: Commentaires paginés
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Paginated'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/Comment'
+    post:
+      tags: [Reviews]
+      summary: Commenter une critique
+      parameters:
+        - $ref: '#/components/parameters/ReviewIdParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [content]
+              properties:
+                content:
+                  type: string
+                  minLength: 1
+                  maxLength: 1000
+      responses:
+        '201':
+          description: Commentaire publié
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Comment'
+
+  /reviews/{reviewId}/report:
+    post:
+      tags: [Reviews]
+      summary: Signaler une critique
+      parameters:
+        - $ref: '#/components/parameters/ReviewIdParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [reason]
+              properties:
+                reason:
+                  type: string
+                  enum: [SPOILER, INAPPROPRIATE, SPAM, HARASSMENT]
+                details:
+                  type: string
+                  maxLength: 500
+      responses:
+        '204':
+          description: Signalement enregistré
+
+  /music/{mediaType}/{externalId}/reviews:
+    get:
+      tags: [Reviews]
+      summary: Critiques d'une oeuvre (album, artiste ou titre)
+      security: []
+      parameters:
+        - name: mediaType
+          in: path
+          required: true
+          schema:
+            type: string
+            enum: [artists, albums, tracks]
+        - name: externalId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: sort
+          in: query
+          schema:
+            type: string
+            enum: [recent, popular, rating_asc, rating_desc]
+            default: recent
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/PerPageParam'
+      responses:
+        '200':
+          description: Critiques paginées
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Paginated'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/Review'
+
+  # ═══════════════════════════════════════════════════════════════════════════
+  # FEED
+  # ═══════════════════════════════════════════════════════════════════════════
+  /feed:
+    get:
+      tags: [Feed]
+      summary: Fil d'actualité personnalisé (abonnements)
+      description: Agrégation chronologique des activités des utilisateurs suivis
+      parameters:
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/PerPageParam'
+      responses:
+        '200':
+          description: Activités paginées
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Paginated'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/FeedActivity'
+
+  /feed/discover:
+    get:
+      tags: [Feed]
+      summary: Découverte — contenu populaire & recommandations
+      security: []
+      description: |
+        Feed de découverte basé sur les tags les plus populaires, 
+        les critiques en vedette et les nouvelles sorties d'artistes suivis.
+      parameters:
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/PerPageParam'
+      responses:
+        '200':
+          description: Contenu de découverte
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  featuredReviews:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Review'
+                  trendingAlbums:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Album'
+                  newReleases:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Album'
+                  popularLists:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/CustomList'
+
+  # ═══════════════════════════════════════════════════════════════════════════
+  # MESSAGES
+  # ═══════════════════════════════════════════════════════════════════════════
+  /messages/conversations:
+    get:
+      tags: [Messages]
+      summary: Liste des conversations
+      responses:
+        '200':
+          description: Conversations de l'utilisateur
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Conversation'
+
+  /messages/conversations/{username}:
+    get:
+      tags: [Messages]
+      summary: Messages d'une conversation
+      description: Nécessite un suivi mutuel entre les deux utilisateurs
+      parameters:
+        - $ref: '#/components/parameters/UsernameParam'
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/PerPageParam'
+      responses:
+        '200':
+          description: Messages paginés
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Paginated'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/Message'
+        '403':
+          description: Suivi mutuel requis
+    post:
+      tags: [Messages]
+      summary: Envoyer un message
+      description: |
+        Endpoint REST pour l'envoi. 
+        La réception en temps réel passe par WebSocket (Socket.io, event `message:new`).
+      parameters:
+        - $ref: '#/components/parameters/UsernameParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [content]
+              properties:
+                content:
+                  type: string
+                  minLength: 1
+                  maxLength: 2000
+      responses:
+        '201':
+          description: Message envoyé
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Message'
+        '403':
+          description: Suivi mutuel requis
+
+  # ═══════════════════════════════════════════════════════════════════════════
+  # NOTIFICATIONS
+  # ═══════════════════════════════════════════════════════════════════════════
+  /notifications:
+    get:
+      tags: [Notifications]
+      summary: Récupérer ses notifications
+      parameters:
+        - name: unreadOnly
+          in: query
+          schema:
+            type: boolean
+            default: false
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/PerPageParam'
+      responses:
+        '200':
+          description: Notifications paginées
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Paginated'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/Notification'
+
+  /notifications/read-all:
+    patch:
+      tags: [Notifications]
+      summary: Marquer toutes les notifications comme lues
+      responses:
+        '204':
+          description: Toutes les notifications marquées lues
+
+  /notifications/{notificationId}/read:
+    patch:
+      tags: [Notifications]
+      summary: Marquer une notification comme lue
+      parameters:
+        - name: notificationId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Notification marquée lue
+
+  /notifications/preferences:
+    get:
+      tags: [Notifications]
+      summary: Récupérer ses préférences de notifications
+      responses:
+        '200':
+          description: Préférences actuelles
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  newLike: { type: object, properties: { push: { type: boolean }, email: { type: boolean } } }
+                  newComment: { type: object, properties: { push: { type: boolean }, email: { type: boolean } } }
+                  newFollower: { type: object, properties: { push: { type: boolean }, email: { type: boolean } } }
+                  newRelease: { type: object, properties: { push: { type: boolean }, email: { type: boolean } } }
+    patch:
+      tags: [Notifications]
+      summary: Mettre à jour ses préférences de notifications
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                newLike: { type: object, properties: { push: { type: boolean }, email: { type: boolean } } }
+                newComment: { type: object, properties: { push: { type: boolean }, email: { type: boolean } } }
+                newFollower: { type: object, properties: { push: { type: boolean }, email: { type: boolean } } }
+                newRelease: { type: object, properties: { push: { type: boolean }, email: { type: boolean } } }
+      responses:
+        '200':
+          description: Préférences mises à jour
+
+  # ═══════════════════════════════════════════════════════════════════════════
+  # ADMIN
+  # ═══════════════════════════════════════════════════════════════════════════
+  /admin/reports:
+    get:
+      tags: [Admin]
+      summary: Liste des signalements en attente
+      parameters:
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [PENDING, RESOLVED, DISMISSED]
+            default: PENDING
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/PerPageParam'
+      responses:
+        '200':
+          description: Signalements paginés
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /admin/reports/{reportId}:
+    patch:
+      tags: [Admin]
+      summary: Traiter un signalement
+      parameters:
+        - name: reportId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [action]
+              properties:
+                action:
+                  type: string
+                  enum: [DISMISS, DELETE_REVIEW, BAN_USER]
+                banDurationDays:
+                  type: integer
+                  description: Requis si action = BAN_USER. 0 = banni définitivement.
+      responses:
+        '204':
+          description: Signalement traité
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /admin/reviews/{reviewId}/feature:
+    patch:
+      tags: [Admin]
+      summary: Mettre en avant / retirer la mise en avant d'une critique
+      parameters:
+        - $ref: '#/components/parameters/ReviewIdParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [featured]
+              properties:
+                featured:
+                  type: boolean
+      responses:
+        '204':
+          description: Statut mis à jour
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /admin/users/{username}/ban:
+    post:
+      tags: [Admin]
+      summary: Bannir un utilisateur
+      parameters:
+        - $ref: '#/components/parameters/UsernameParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                reason:
+                  type: string
+                durationDays:
+                  type: integer
+                  description: 0 = banni définitivement
+      responses:
+        '204':
+          description: Utilisateur banni
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /admin/users/{username}/unban:
+    post:
+      tags: [Admin]
+      summary: Lever un bannissement
+      parameters:
+        - $ref: '#/components/parameters/UsernameParam'
+      responses:
+        '204':
+          description: Bannissement levé
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  # ═══════════════════════════════════════════════════════════════════════════
+  # EXPORT RGPD
+  # ═══════════════════════════════════════════════════════════════════════════
+  /export/my-data:
+    get:
+      tags: [Export]
+      summary: Exporter ses données personnelles (conformité RGPD)
+      description: |
+        Génère une archive contenant toutes les données personnelles :
+        - Profil utilisateur
+        - Bibliothèque complète
+        - Toutes les critiques rédigées
+        - Historique des messages
+        - Listes personnalisées
+      parameters:
+        - name: format
+          in: query
+          schema:
+            type: string
+            enum: [json, csv]
+            default: json
+      responses:
+        '200':
+          description: Fichier d'export
+          content:
+            application/json:
+              schema:
+                type: object
+            text/csv:
+              schema:
+                type: string
+          headers:
+            Content-Disposition:
+              schema:
+                type: string
+                example: 'attachment; filename="supcontent-export-2025.json"'
+        '429':
+          description: Export déjà demandé récemment (cooldown 24h)
