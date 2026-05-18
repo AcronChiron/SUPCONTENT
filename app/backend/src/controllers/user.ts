@@ -49,3 +49,8 @@ export const unfollow = asyncHandler(async (req: Request, res: Response) => {
   const result = await userService.unfollowUser(req.user!.userId, req.params.username);
   res.json(result);
 });
+
+export const deleteMe = asyncHandler(async (req: Request, res: Response) => {
+  await userService.deleteMe(req.user!.userId);
+  res.status(204).send();
+});

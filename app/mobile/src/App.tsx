@@ -12,6 +12,10 @@ import NotificationsScreen from './screens/NotificationsScreen';
 import ConversationsScreen from './screens/ConversationsScreen';
 import ChatScreen from './screens/ChatScreen';
 import MediaDetailScreen from './screens/MediaDetailScreen';
+import ReviewDetailScreen from './screens/ReviewDetailScreen';
+import ListsScreen from './screens/ListsScreen';
+import ListDetailScreen from './screens/ListDetailScreen';
+import UserProfileScreen from './screens/UserProfileScreen';
 
 const Stack = createNativeStackNavigator();
 
@@ -43,6 +47,10 @@ function AppNavigator() {
           <Stack.Screen name="Conversations" component={ConversationsScreen} options={{ title: 'Messages' }} />
           <Stack.Screen name="Chat" component={ChatScreen} />
           <Stack.Screen name="MediaDetail" component={MediaDetailScreen} options={{ title: 'Detail' }} />
+          <Stack.Screen name="ReviewDetail" component={ReviewDetailScreen} options={{ title: 'Critique' }} />
+          <Stack.Screen name="Lists" component={ListsScreen} options={{ title: 'Mes listes' }} />
+          <Stack.Screen name="ListDetail" component={ListDetailScreen} />
+          <Stack.Screen name="UserProfile" component={UserProfileScreen} />
         </>
       )}
     </Stack.Navigator>

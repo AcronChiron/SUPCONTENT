@@ -7,4 +7,6 @@ notificationRouter.use(authenticate);
 
 notificationRouter.get('/', notifCtrl.getNotifications);
 notificationRouter.patch('/read-all', notifCtrl.markAllRead);
+notificationRouter.get('/preferences', notifCtrl.getPrefs);
+notificationRouter.patch('/preferences', notifCtrl.updatePrefs);
 notificationRouter.patch('/:id/read', notifCtrl.markRead);

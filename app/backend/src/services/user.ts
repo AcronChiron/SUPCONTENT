@@ -1,6 +1,7 @@
 import { prisma } from '../config/database';
 import { ApiError } from '../utils/ApiError';
 import { PaginationParams } from '../utils/pagination';
+import { createNotification } from './notification';
 
 const userSelect = {
   id: true, email: true, username: true, role: true,
@@ -72,7 +73,10 @@ export async function getFollowing(username: string, pagination: PaginationParam
 }
 
 export async function followUser(followerId: string, username: string) {
-  const target = await prisma.user.findUnique({ where: { username }, select: { id: true } });
+  const [target, follower] = await Promise.all([
+    prisma.user.findUnique({ where: { username }, select: { id: true } }),
+    prisma.user.findUnique({ where: { id: followerId }, select: { username: true } }),
+  ]);
   if (!target) throw ApiError.notFound('User not found');
   if (target.id === followerId) throw ApiError.badRequest('Cannot follow yourself');
 
@@ -81,6 +85,16 @@ export async function followUser(followerId: string, username: string) {
   } catch {
     throw ApiError.conflict('Already following this user');
   }
+
+  try {
+    await createNotification(target.id, 'follow', {
+      followerId,
+      followerUsername: follower?.username ?? '',
+    });
+  } catch (err) {
+    console.error('[Notification] Failed to create follow notification', err);
+  }
+
   return { followed: true };
 }
 
@@ -92,4 +106,8 @@ export async function unfollowUser(followerId: string, username: string) {
   });
   if (deleted.count === 0) throw ApiError.notFound('Not following this user');
   return { followed: false };
+}
+
+export async function deleteMe(userId: string) {
+  await prisma.user.delete({ where: { id: userId } });
 }

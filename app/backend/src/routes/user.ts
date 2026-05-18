@@ -6,6 +6,7 @@ export const userRouter = Router();
 
 userRouter.get('/me', authenticate, userCtrl.getMe);
 userRouter.patch('/me', authenticate, userCtrl.updateMe);
+userRouter.delete('/me', authenticate, userCtrl.deleteMe);
 userRouter.get('/:username', optionalAuth, userCtrl.getByUsername);
 userRouter.get('/:username/followers', userCtrl.getFollowers);
 userRouter.get('/:username/following', userCtrl.getFollowing);

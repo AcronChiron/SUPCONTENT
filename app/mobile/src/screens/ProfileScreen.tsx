@@ -3,7 +3,7 @@ import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { api } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 
-export default function ProfileScreen() {
+export default function ProfileScreen({ navigation }: any) {
   const { user: authUser, logout } = useAuth();
   const [profile, setProfile] = useState<any>(null);
 
@@ -27,6 +27,10 @@ export default function ProfileScreen() {
         <View style={styles.stat}><Text style={styles.statNum}>{profile.followingCount}</Text><Text style={styles.statLabel}>following</Text></View>
       </View>
 
+      <TouchableOpacity style={styles.listBtn} onPress={() => navigation.navigate('Lists')}>
+        <Text style={styles.listBtnText}>Mes listes</Text>
+      </TouchableOpacity>
+
       <TouchableOpacity style={styles.logoutBtn} onPress={logout}>
         <Text style={styles.logoutText}>Log out</Text>
       </TouchableOpacity>
@@ -46,6 +50,8 @@ const styles = StyleSheet.create({
   stat: { alignItems: 'center' },
   statNum: { color: '#F0F2FF', fontSize: 18, fontWeight: '700' },
   statLabel: { color: '#8892B0', fontSize: 12 },
+  listBtn: { backgroundColor: '#1A1F3C', borderRadius: 12, padding: 14, alignItems: 'center', marginBottom: 8 },
+  listBtnText: { color: '#F0F2FF', fontWeight: '600' },
   logoutBtn: { backgroundColor: '#1A1F3C', borderRadius: 12, padding: 14, alignItems: 'center' },
   logoutText: { color: '#E8325A', fontWeight: '600' },
 });

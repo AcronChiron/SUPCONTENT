@@ -18,13 +18,11 @@ info:
   version: 1.0.0
   contact:
     name: Équipe SUPCONTENT
-    email: dev@supcontent.io
+    url: https://github.com/bnico2303
 
 servers:
   - url: http://localhost:3000/api/v1
     description: Serveur de développement local
-  - url: https://api.supcontent.io/v1
-    description: Production
 
 tags:
   - name: Auth

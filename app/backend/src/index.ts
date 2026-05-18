@@ -5,6 +5,7 @@ import { prisma } from './config/database';
 import { redis } from './config/redis';
 import { setupWebSocket } from './websocket';
 import { createApp } from './app';
+import { setIo } from './config/socket';
 
 const app = createApp();
 const server = http.createServer(app);
@@ -13,6 +14,7 @@ const io = new Server(server, {
   cors: { origin: env.CLIENT_WEB_URL, credentials: true },
 });
 
+setIo(io);
 setupWebSocket(io);
 
 // Export for use in controllers that need socket

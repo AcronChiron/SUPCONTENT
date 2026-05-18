@@ -1,4 +1,5 @@
 import { Request, Response } from 'express';
+import { z } from 'zod';
 import { asyncHandler } from '../utils/asyncHandler';
 import { parsePagination, paginate } from '../utils/pagination';
 import * as notifService from '../services/notification';
@@ -17,4 +18,22 @@ export const markAllRead = asyncHandler(async (req: Request, res: Response) => {
 export const markRead = asyncHandler(async (req: Request, res: Response) => {
   await notifService.markRead(req.user!.userId, req.params.id);
   res.json({ message: 'Notification marked as read' });
+});
+
+const prefsSchema = z.object({
+  likes: z.boolean().optional(),
+  comments: z.boolean().optional(),
+  follows: z.boolean().optional(),
+  new_release: z.boolean().optional(),
+});
+
+export const getPrefs = asyncHandler(async (req: Request, res: Response) => {
+  const prefs = await notifService.getPrefs(req.user!.userId);
+  res.json(prefs);
+});
+
+export const updatePrefs = asyncHandler(async (req: Request, res: Response) => {
+  const data = prefsSchema.parse(req.body);
+  const prefs = await notifService.updatePrefs(req.user!.userId, data);
+  res.json(prefs);
 });

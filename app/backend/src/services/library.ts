@@ -2,6 +2,7 @@ import { prisma } from '../config/database';
 import { ApiError } from '../utils/ApiError';
 import { PaginationParams } from '../utils/pagination';
 import { MediaType, LibraryStatus } from '@prisma/client';
+import { getIo } from '../config/socket';
 
 export async function getLibrary(userId: string, pagination: PaginationParams, filters?: { status?: string; mediaType?: string }) {
   const where: any = { userId };
@@ -25,7 +26,10 @@ export async function getLibrary(userId: string, pagination: PaginationParams, f
   return { data, total };
 }
 
-export async function upsertItem(userId: string, data: { externalId: string; mediaType: MediaType; status: LibraryStatus; rating?: number; notes?: string; title?: string; artistName?: string; imageUrl?: string }) {
+export async function upsertItem(userId: string, data: {
+  externalId: string; mediaType: MediaType; status: LibraryStatus;
+  rating?: number; notes?: string; title?: string; artistName?: string; imageUrl?: string;
+}) {
   const { title, artistName, imageUrl, ...itemData } = data;
   if (title) {
     await prisma.mediaCache.upsert({
@@ -34,11 +38,39 @@ export async function upsertItem(userId: string, data: { externalId: string; med
       update: { title, artistName, imageUrl },
     });
   }
-  return prisma.libraryItem.upsert({
+  const item = await prisma.libraryItem.upsert({
     where: { userId_externalId: { userId, externalId: data.externalId } },
     create: { userId, ...itemData },
     update: { status: itemData.status, rating: itemData.rating, notes: itemData.notes },
   });
+
+  // Emit feed:activity to followers only when status is DONE (non-blocking)
+  if (data.status === LibraryStatus.DONE) {
+    try {
+      const followers = await prisma.follow.findMany({
+        where: { followedId: userId },
+        select: { followerId: true },
+      });
+      const io = getIo();
+      if (io && followers.length > 0) {
+        const activity = {
+          type: 'library',
+          userId,
+          externalId: data.externalId,
+          mediaType: data.mediaType,
+          status: data.status,
+          title: title ?? null,
+        };
+        for (const { followerId } of followers) {
+          io.to(`user:${followerId}`).emit('feed:activity', activity);
+        }
+      }
+    } catch (err) {
+      console.error('[WebSocket] Failed to emit feed:activity for library', err);
+    }
+  }
+
+  return item;
 }
 
 export async function getStats(userId: string) {
