@@ -1,16 +1,31 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../context/AuthContext';
 import './Auth.css';
+
+function translateError(msg: string, t: (k: string) => string): string {
+  const map: Record<string, string> = {
+    'Invalid credentials': t('errors.invalidCredentials'),
+    'Email already in use': t('errors.emailInUse'),
+    'Username already taken': t('errors.usernameTaken'),
+    'Account is banned': t('errors.accountBanned'),
+    'Request failed': t('errors.requestFailed'),
+  };
+  return map[msg] ?? t('errors.requestFailed');
+}
 
 export default function Login() {
   const { t } = useTranslation();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
-  const { login } = useAuth();
+  const { login, user } = useAuth();
   const navigate = useNavigate();
+
+  useEffect(() => {
+    if (user) navigate('/', { replace: true });
+  }, [user, navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -19,7 +34,7 @@ export default function Login() {
       await login(email, password);
       navigate('/');
     } catch (err: any) {
-      setError(err.message);
+      setError(translateError(err.message, t));
     }
   };
 

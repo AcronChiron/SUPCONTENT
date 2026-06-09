@@ -18,17 +18,17 @@ export default function RegisterScreen({ navigation }: any) {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Create Account</Text>
+      <Text style={styles.title}>Créer un compte</Text>
 
-      <TextInput style={styles.input} placeholder="Email" placeholderTextColor="#8892B0" value={email} onChangeText={setEmail} keyboardType="email-address" autoCapitalize="none" />
-      <TextInput style={styles.input} placeholder="Username" placeholderTextColor="#8892B0" value={username} onChangeText={setUsername} autoCapitalize="none" />
-      <TextInput style={styles.input} placeholder="Password" placeholderTextColor="#8892B0" value={password} onChangeText={setPassword} secureTextEntry />
+      <TextInput style={styles.input} placeholder="E-mail" placeholderTextColor="#8892B0" value={email} onChangeText={setEmail} keyboardType="email-address" autoCapitalize="none" />
+      <TextInput style={styles.input} placeholder="Nom d'utilisateur" placeholderTextColor="#8892B0" value={username} onChangeText={setUsername} autoCapitalize="none" />
+      <TextInput style={styles.input} placeholder="Mot de passe" placeholderTextColor="#8892B0" value={password} onChangeText={setPassword} secureTextEntry />
       <TouchableOpacity style={styles.btn} onPress={handleRegister}>
         <Text style={styles.btnText}>Sign up</Text>
       </TouchableOpacity>
 
       <TouchableOpacity onPress={() => navigation.navigate('Login')}>
-        <Text style={styles.link}>Already have an account? <Text style={{ color: '#E8325A' }}>Log in</Text></Text>
+        <Text style={styles.link}>Déjà un compte ? <Text style={{ color: '#E8325A' }}>Se connecter</Text></Text>
       </TouchableOpacity>
     </View>
   );

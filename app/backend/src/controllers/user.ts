@@ -54,3 +54,9 @@ export const deleteMe = asyncHandler(async (req: Request, res: Response) => {
   await userService.deleteMe(req.user!.userId);
   res.status(204).send();
 });
+
+export const getUserReviews = asyncHandler(async (req: Request, res: Response) => {
+  const pagination = parsePagination(req.query as any);
+  const { data, total } = await userService.getUserReviews(req.params.username, pagination);
+  res.json(paginate(data, total, pagination));
+});

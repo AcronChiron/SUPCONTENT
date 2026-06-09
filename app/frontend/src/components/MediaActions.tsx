@@ -12,11 +12,12 @@ type Props = {
   title?: string;
   artistName?: string;
   imageUrl?: string;
+  onReviewSubmitted?: () => void;
 };
 
 const STATUSES = ['TO_LISTEN', 'LISTENING', 'DONE', 'ABANDONED'] as const;
 
-export default function MediaActions({ externalId, mediaType, initialStatus, initialRating, title, artistName, imageUrl }: Props) {
+export default function MediaActions({ externalId, mediaType, initialStatus, initialRating, title, artistName, imageUrl, onReviewSubmitted }: Props) {
   const meta = { title, artistName, imageUrl };
   const { t } = useTranslation();
   const { user } = useAuth();
@@ -74,6 +75,7 @@ export default function MediaActions({ externalId, mediaType, initialStatus, ini
       setShowReview(false);
       setReviewContent(''); setReviewRating(0); setSpoiler(false);
       flash();
+      onReviewSubmitted?.();
     } catch (err: any) {
       setReviewError(err.message || 'Error');
     } finally {

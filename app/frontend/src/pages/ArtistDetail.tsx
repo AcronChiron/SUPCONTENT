@@ -12,6 +12,11 @@ export default function ArtistDetail() {
   const [albums, setAlbums] = useState<any[]>([]);
   const [similar, setSimilar] = useState<any[]>([]);
 
+  const fetchArtist = () => {
+    if (!id) return;
+    api(`/music/artists/${id}`).then(setArtist).catch(console.error);
+  };
+
   useEffect(() => {
     if (!id) return;
     setArtist(null); setAlbums([]); setSimilar([]);
@@ -45,7 +50,7 @@ export default function ArtistDetail() {
           {artist.bio?.summary && (
             <p className="media-bio" dangerouslySetInnerHTML={{ __html: artist.bio.summary }} />
           )}
-          <MediaActions externalId={id!} mediaType="ARTIST" initialStatus={artist.stats?.myStatus} initialRating={artist.stats?.myRating} title={artist.name} artistName={artist.name} imageUrl={artist.image?.[3]?.['#text']} />
+          <MediaActions externalId={id!} mediaType="ARTIST" initialStatus={artist.stats?.myStatus} initialRating={artist.stats?.myRating} title={artist.name} artistName={artist.name} imageUrl={artist.image?.[3]?.['#text']} onReviewSubmitted={fetchArtist} />
         </div>
       </div>
 

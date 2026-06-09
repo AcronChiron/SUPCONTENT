@@ -72,6 +72,9 @@ Le lien est résolu côté serveur (aucune clé API côté client).
 
 **Paramètres → Profil** : avatar, bio (500 caractères max), site web, thème, langue.
 
+> **Langues disponibles** : français (par défaut) et anglais. Le changement de langue
+> s'applique immédiatement à toute l'interface, y compris les messages d'erreur.
+
 ## 11. Export RGPD
 
 **Paramètres → Confidentialité → Exporter mes données** : fichier JSON ou CSV
@@ -91,6 +94,8 @@ Sur une critique : **⋯ → Signaler**. Les modérateurs examinent via le table
 
 L'application Expo offre : feed, recherche, profil, bibliothèque, notifications,
 messagerie et détail des œuvres. Mêmes identifiants que le web.
+
+L'icône et le splash screen sont aux couleurs de SUPCONTENT (dégradé rose-violet sur fond sombre).
 
 ---
 

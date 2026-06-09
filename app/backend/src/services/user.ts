@@ -111,3 +111,19 @@ export async function unfollowUser(followerId: string, username: string) {
 export async function deleteMe(userId: string) {
   await prisma.user.delete({ where: { id: userId } });
 }
+
+export async function getUserReviews(username: string, pagination: PaginationParams) {
+  const user = await prisma.user.findUnique({ where: { username }, select: { id: true } });
+  if (!user) throw ApiError.notFound('User not found');
+  const [data, total] = await Promise.all([
+    prisma.review.findMany({
+      where: { userId: user.id },
+      skip: pagination.skip,
+      take: pagination.perPage,
+      include: { user: { select: { id: true, username: true, avatarUrl: true } }, _count: { select: { likes: true, comments: true } } },
+      orderBy: { createdAt: 'desc' },
+    }),
+    prisma.review.count({ where: { userId: user.id } }),
+  ]);
+  return { data, total };
+}

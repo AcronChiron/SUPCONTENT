@@ -10,6 +10,10 @@ export default function TrackDetail() {
   const { id } = useParams();
   const [track, setTrack] = useState<any>(null);
 
+  const fetchMedia = () => {
+    if (id) api(`/music/tracks/${id}`).then(setTrack).catch(console.error);
+  };
+
   useEffect(() => {
     if (id) api(`/music/tracks/${id}`).then(setTrack).catch(console.error);
   }, [id]);
@@ -30,7 +34,7 @@ export default function TrackDetail() {
 
       {track.videoId && <YouTubePlayer videoId={track.videoId} />}
 
-      <MediaActions externalId={id!} mediaType="TRACK" initialStatus={track.stats?.myStatus} initialRating={track.stats?.myRating} title={track.name} artistName={track.artist?.name} imageUrl={track.album?.image?.[3]?.['#text'] || track.image?.[3]?.['#text']} />
+      <MediaActions externalId={id!} mediaType="TRACK" initialStatus={track.stats?.myStatus} initialRating={track.stats?.myRating} title={track.name} artistName={track.artist?.name} imageUrl={track.album?.image?.[3]?.['#text'] || track.image?.[3]?.['#text']}  onReviewSubmitted={fetchMedia} />
 
       {track.wiki?.summary && (
         <div style={{ marginTop: '1.5rem' }}>

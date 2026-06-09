@@ -93,4 +93,14 @@ export default {
   messages: { title: 'Messages', empty: 'No conversations yet.', typePlaceholder: 'Type a message...', send: 'Send' },
   reviews: { addComment: 'Add a comment...', comments: 'Comments', commentsCount: 'comments', post: 'Post', noReviews: 'No reviews yet. Be the first!' },
   admin: { title: 'Admin', reports: 'Reports', reportedBy: 'Reported by', resolve: 'Resolve', dismiss: 'Dismiss' },
+  errors: {
+    invalidCredentials: 'Invalid credentials',
+    emailInUse: 'This email is already in use',
+    usernameTaken: 'This username is already taken',
+    accountBanned: 'This account has been suspended',
+    requestFailed: 'An error occurred, please try again',
+    usernameFormat: 'Invalid username (3-30 alphanumeric characters)',
+    emailFormat: 'Invalid email format',
+    passwordLength: 'Password must be at least 8 characters',
+  },
 };

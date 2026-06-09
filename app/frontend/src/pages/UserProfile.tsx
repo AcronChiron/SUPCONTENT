@@ -3,16 +3,19 @@ import { useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { api } from '../services/api';
 import { useAuth } from '../context/AuthContext';
+import ReviewCard from '../components/ReviewCard';
 
 export default function UserProfile() {
   const { t } = useTranslation();
   const { username } = useParams();
   const { user: me } = useAuth();
   const [user, setUser] = useState<any>(null);
+  const [reviews, setReviews] = useState<any[]>([]);
 
   useEffect(() => {
     if (username) {
       api(`/users/${username}`).then(setUser).catch(console.error);
+      api(`/users/${username}/reviews`).then(res => setReviews(res.data || [])).catch(console.error);
     }
   }, [username]);
 
@@ -53,9 +56,18 @@ export default function UserProfile() {
       </div>
 
       {me && me.username !== username && (
-        <button className={user.isFollowing ? 'btn-secondary' : 'btn-primary'} onClick={toggleFollow}>
+        <button className={user.isFollowing ? 'btn-secondary' : 'btn-primary'} onClick={toggleFollow} style={{ marginBottom: '1.5rem' }}>
           {user.isFollowing ? t('common.unfollow') : t('common.follow')}
         </button>
+      )}
+
+      {reviews.length > 0 && (
+        <div style={{ marginTop: '1rem' }}>
+          <h3 style={{ fontSize: '1.125rem', fontWeight: 700, marginBottom: '1rem' }}>{t('common.reviews')} ({reviews.length})</h3>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+            {reviews.map((r: any) => <ReviewCard key={r.id} review={r} />)}
+          </div>
+        </div>
       )}
     </div>
   );

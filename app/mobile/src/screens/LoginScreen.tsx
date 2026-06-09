@@ -37,7 +37,7 @@ export default function LoginScreen({ navigation }: any) {
       <Text style={styles.title}>SUP<Text style={styles.accent}>CONTENT</Text></Text>
       <Text style={styles.subtitle}>L'Instagram de la Musique</Text>
 
-      <TextInput style={styles.input} placeholder="Email" placeholderTextColor="#8892B0" value={email} onChangeText={setEmail} keyboardType="email-address" autoCapitalize="none" />
+      <TextInput style={styles.input} placeholder="E-mail" placeholderTextColor="#8892B0" value={email} onChangeText={setEmail} keyboardType="email-address" autoCapitalize="none" />
       <TextInput style={styles.input} placeholder="Mot de passe" placeholderTextColor="#8892B0" value={password} onChangeText={setPassword} secureTextEntry />
       <TouchableOpacity style={styles.btn} onPress={handleLogin}>
         <Text style={styles.btnText}>Se connecter</Text>

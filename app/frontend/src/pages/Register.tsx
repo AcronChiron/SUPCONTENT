@@ -1,8 +1,19 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../context/AuthContext';
 import './Auth.css';
+
+function translateError(msg: string, t: (k: string) => string): string {
+  if (msg.includes('Invalid credentials')) return t('errors.invalidCredentials');
+  if (msg.includes('Email already in use')) return t('errors.emailInUse');
+  if (msg.includes('Username already taken')) return t('errors.usernameTaken');
+  if (msg.includes('Account is banned')) return t('errors.accountBanned');
+  if (msg.includes('at least 8')) return t('errors.passwordLength');
+  if (msg.includes('at least 3') || msg.includes('at most 30') || msg.includes('username')) return t('errors.usernameFormat');
+  if (msg.includes('email')) return t('errors.emailFormat');
+  return t('errors.requestFailed');
+}
 
 export default function Register() {
   const { t } = useTranslation();
@@ -10,8 +21,12 @@ export default function Register() {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
-  const { register } = useAuth();
+  const { register, user } = useAuth();
   const navigate = useNavigate();
+
+  useEffect(() => {
+    if (user) navigate('/', { replace: true });
+  }, [user, navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -20,7 +35,7 @@ export default function Register() {
       await register(email, username, password);
       navigate('/');
     } catch (err: any) {
-      setError(err.message);
+      setError(translateError(err.message, t));
     }
   };
 

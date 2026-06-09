@@ -4,14 +4,30 @@
 
 Projet académique 3PROJ (2024-2025).
 
+## Fonctionnalités
+
+- **Authentification** : inscription email/password + OAuth Google et GitHub, sessions JWT (15 min) + refresh token httpOnly (30 j)
+- **Recherche musicale** : artistes, albums, titres via Last.fm — fiches enrichies (bio, albums, similarités, pochettes)
+- **Bibliothèque personnelle** : statuts (À écouter / En cours / Terminé / Abandonné), notation 1-5, notes privées
+- **Listes** : listes publiques ou privées d'artistes / albums / titres
+- **Critiques** : 10-5000 caractères, notation, likes, commentaires, signalement, mise en avant admin
+- **Feed** : activité de ses abonnements en temps réel (Socket.io) + fil découverte public
+- **Messagerie privée** : temps réel (Socket.io), indicateur de saisie, entre followers mutuels uniquement
+- **Notifications** : likes, commentaires, nouveaux abonnés — configurable et en temps réel
+- **Player YouTube** : lecture d'extraits via l'iframe API, videoId résolu côté serveur
+- **Classements** : top artistes et titres Last.fm
+- **Admin** : gestion des signalements, mise en avant de critiques, ban/unban utilisateurs
+- **Export RGPD** : profil + bibliothèque + critiques + messages + listes en JSON ou CSV (1×/24 h)
+- **Application mobile** : Expo (React Native) — feed, recherche, profil, bibliothèque, notifications, chat, détail œuvres
+
 ## Stack
 
-| Brique    | Technologies                                                  |
-| --------- | ------------------------------------------------------------- |
-| Backend   | Node.js 20, TypeScript, Express, Prisma, PostgreSQL 15, Redis 7, Socket.io |
-| Frontend  | React 18 + Vite, React Router, Socket.io client, Lucide       |
-| Mobile    | React Native / Expo                                            |
-| APIs      | Last.fm (métadonnées), YouTube Data v3 (videoId)              |
+| Brique    | Technologies                                                                   |
+| --------- | ------------------------------------------------------------------------------ |
+| Backend   | Node.js 20, TypeScript strict, Express, Prisma 5, PostgreSQL 15, Redis 7, Socket.io |
+| Frontend  | React 18 + Vite, React Router, react-i18next (fr/en), Socket.io client, Lucide |
+| Mobile    | React Native / Expo                                                            |
+| APIs      | Last.fm (métadonnées), YouTube Data v3 (videoId)                              |
 
 Les clients ne contactent **jamais** les APIs tierces directement : tout passe par le backend.
 
@@ -19,12 +35,13 @@ Les clients ne contactent **jamais** les APIs tierces directement : tout passe p
 
 ```bash
 cp .env.example .env
-# Éditer .env pour fournir LASTFM_API_KEY, YOUTUBE_API_KEY et les secrets JWT
+# Éditer .env : LASTFM_API_KEY, YOUTUBE_API_KEY, JWT_SECRET, JWT_REFRESH_SECRET
 docker compose up --build
 ```
 
-- Backend : http://localhost:3000
 - Frontend : http://localhost:5173
+- Backend (API) : http://localhost:3000
+- Swagger UI : http://localhost:3000/api-docs
 - Postgres : localhost:5432 · Redis : localhost:6379
 
 Les migrations Prisma s'exécutent automatiquement au démarrage du conteneur backend
@@ -53,14 +70,21 @@ Les migrations Prisma s'exécutent automatiquement au démarrage du conteneur ba
 
 1. Google Cloud Console → **APIs & Services** → **Credentials** → **Create Credentials** → **OAuth 2.0 Client ID**
 2. Application type : **Web application**
-3. Authorized redirect URI : `http://localhost:3000/api/v1/auth/oauth/google/callback`
+3. Authorized redirect URI :
+   - **Docker** : `http://localhost:5173/api/v1/auth/oauth/google/callback`
+   - **Dev sans Docker** : `http://localhost:3000/api/v1/auth/oauth/google/callback`
 4. Copier Client ID → `OAUTH_GOOGLE_CLIENT_ID` et Client Secret → `OAUTH_GOOGLE_CLIENT_SECRET`
+
+> En Docker, nginx (port 5173) proxifie `/api/v1/…` vers le backend (port 3000).
+> C'est pourquoi le `redirect_uri` doit utiliser le port 5173 et non 3000.
 
 ### OAuth GitHub (optionnel)
 
 1. GitHub → **Settings** → **Developer settings** → **OAuth Apps** → **New OAuth App**
 2. Homepage URL : `http://localhost:5173`
-3. Authorization callback URL : `http://localhost:3000/api/v1/auth/oauth/github/callback`
+3. Authorization callback URL :
+   - **Docker** : `http://localhost:5173/api/v1/auth/oauth/github/callback`
+   - **Dev sans Docker** : `http://localhost:3000/api/v1/auth/oauth/github/callback`
 4. Copier Client ID → `OAUTH_GITHUB_CLIENT_ID` et Client Secret → `OAUTH_GITHUB_CLIENT_SECRET`
 
 ## Architecture — Diagramme de séquence
@@ -96,6 +120,8 @@ sequenceDiagram
 ```bash
 cd app/backend
 cp .env.example .env
+# Adapter DATABASE_URL et REDIS_URL vers des instances locales
+# Changer CLIENT_WEB_URL=http://localhost:5173 (ou port du frontend)
 npm install
 npx prisma generate
 npx prisma migrate dev
@@ -107,7 +133,6 @@ npm test           # vitest
 
 ```bash
 cd app/frontend
-cp .env.example .env
 npm install
 npm run dev        # http://localhost:5173
 npm test
@@ -117,8 +142,9 @@ npm test
 
 ```bash
 cd app/mobile
-cp .env.example .env
 npm install
+# Générer les icônes brand (ne nécessite aucune dépendance externe)
+node generate-icons.js
 npx expo start
 ```
 
@@ -138,8 +164,8 @@ SUPCONTENT/
 
 ## Documentation
 
-- [`docs/DOCUMENTATION_TECHNIQUE.md`](docs/DOCUMENTATION_TECHNIQUE.md) — architecture détaillée
-- [`docs/MANUEL_UTILISATEUR.md`](docs/MANUEL_UTILISATEUR.md) — guide utilisateur
+- [`docs/DOCUMENTATION_TECHNIQUE.md`](docs/DOCUMENTATION_TECHNIQUE.md) — architecture détaillée, design system, i18n, sécurité
+- [`docs/MANUEL_UTILISATEUR.md`](docs/MANUEL_UTILISATEUR.md) — guide utilisateur complet
 - Swagger UI : http://localhost:3000/api-docs (dev uniquement)
 
 ## Tests
@@ -149,13 +175,20 @@ SUPCONTENT/
 
 ## Variables d'environnement requises
 
-Voir `.env.example` pour la liste complète. Les secrets obligatoires :
+Voir `.env.example` pour la liste complète. Les variables obligatoires :
 
-- `DATABASE_URL`, `REDIS_URL`
-- `JWT_SECRET`, `JWT_REFRESH_SECRET`
-- `LASTFM_API_KEY`, `YOUTUBE_API_KEY`
-- `OAUTH_GOOGLE_*`, `OAUTH_GITHUB_*`
-- `CLIENT_WEB_URL`
+| Variable              | Description                                  |
+| --------------------- | -------------------------------------------- |
+| `DATABASE_URL`        | Chaîne de connexion PostgreSQL               |
+| `REDIS_URL`           | URL Redis                                    |
+| `JWT_SECRET`          | Secret de signature des access tokens        |
+| `JWT_REFRESH_SECRET`  | Secret de signature des refresh tokens       |
+| `LASTFM_API_KEY`      | Clé API Last.fm                              |
+| `YOUTUBE_API_KEY`     | Clé API YouTube Data v3                      |
+| `CLIENT_WEB_URL`      | URL publique du frontend (ex: `http://localhost:5173`) |
+
+Variables optionnelles : `OAUTH_GOOGLE_CLIENT_ID`, `OAUTH_GOOGLE_CLIENT_SECRET`,
+`OAUTH_GITHUB_CLIENT_ID`, `OAUTH_GITHUB_CLIENT_SECRET` (OAuth désactivé si absent).
 
 ## Licence
 

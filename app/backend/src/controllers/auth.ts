@@ -67,7 +67,7 @@ export const oauthGoogle = asyncHandler(async (_req: Request, res: Response) => 
   requireOAuth('google');
   const params = new URLSearchParams({
     client_id: env.OAUTH_GOOGLE_CLIENT_ID,
-    redirect_uri: `${env.CLIENT_WEB_URL}/auth/oauth/google/callback`,
+    redirect_uri: `${env.CLIENT_WEB_URL}/api/v1/auth/oauth/google/callback`,
     response_type: 'code',
     scope: 'openid email profile',
   });
@@ -87,7 +87,7 @@ export const oauthGoogleCallback = asyncHandler(async (req: Request, res: Respon
       code,
       client_id: env.OAUTH_GOOGLE_CLIENT_ID,
       client_secret: env.OAUTH_GOOGLE_CLIENT_SECRET,
-      redirect_uri: `${env.CLIENT_WEB_URL}/auth/oauth/google/callback`,
+      redirect_uri: `${env.CLIENT_WEB_URL}/api/v1/auth/oauth/google/callback`,
       grant_type: 'authorization_code',
     }),
   });

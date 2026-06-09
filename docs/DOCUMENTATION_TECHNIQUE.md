@@ -97,7 +97,11 @@ SUPCONTENT/
 
 - **JWT** : `accessToken` 15 min (Bearer) + `refreshToken` 30 jours (httpOnly cookie, path `/api/v1/auth`)
 - Refresh automatique côté client : sur `401`, le client tente un refresh puis rejoue la requête.
-- **OAuth 2.0** : Google et GitHub, callback serveur qui redirige vers `/auth/callback?token=...` avec set-cookie.
+- **OAuth 2.0** : Google et GitHub. Flux :
+  1. Client → `GET /api/v1/auth/oauth/{provider}` (redirect vers la page de consentement du provider)
+  2. Provider → `GET /api/v1/auth/oauth/{provider}/callback?code=...` (nginx proxifie vers le backend)
+  3. Backend échange le code, crée/retrouve l'utilisateur, set-cookie refresh + redirect vers `/auth/callback?token=<accessToken>`
+  - **Important** : le `redirect_uri` envoyé à Google doit pointer sur `/api/v1/…` (chemin proxifié par nginx), pas sur le chemin React `/auth/…`.
 
 ### 3.3 Rate limiting
 
@@ -175,14 +179,29 @@ La migration initiale est versionnée dans
 - **Icônes** : Lucide React
 - **Border radius** : 12 px
 - **Grille pochettes** ratio 1:1 (inspiration Instagram)
+- **Favicon** : SVG brand personnalisé (`public/favicon.svg`) — dégradé `#ff3d6e → #e8325a → #6b3fa0` avec note ♪
 
-### 5.2 Routing
+### 5.2 Internationalisation (i18n)
+
+Le frontend utilise **react-i18next** avec deux langues : `fr` (défaut) et `en`.
+
+Fichiers de traduction : `src/i18n/fr.ts` et `src/i18n/en.ts`.
+
+Clés couverts : navigation, auth (labels, placeholders, taglines), pages (feed, discover, library,
+profile, search, charts, reviews, messages, notifications, admin, settings, player),
+et `errors` (invalidCredentials, emailInUse, usernameTaken, accountBanned, passwordLength,
+usernameFormat, emailFormat, requestFailed).
+
+Les messages d'erreur backend (anglais) sont traduits côté client par une fonction
+`translateError()` dans `Login.tsx` et `Register.tsx`.
+
+### 5.3 Routing
 
 Pages principales : Login, Register, Feed, Discover, Search, Charts, ArtistDetail,
 AlbumDetail, TrackDetail, Profile, MyLibrary, ListDetail, ReviewDetail, Conversations,
 Chat, Notifications, EditProfile, AdminDashboard, AuthCallback.
 
-### 5.3 Couche API
+### 5.4 Couche API
 
 `src/services/api.ts` expose une fonction `api<T>(path, options)` qui :
 
@@ -201,6 +220,20 @@ Conversations, Chat, MediaDetail.
 
 Navigation : `@react-navigation/native-stack`.
 Le service `api.ts` et le `AuthContext` partagent le même contrat que le web.
+
+### 6.1 Icônes et splash screen
+
+Les assets sont générés par `app/mobile/generate-icons.js` (script Node.js pur, sans dépendance externe) :
+
+| Fichier                       | Dimensions  | Description                                  |
+| ----------------------------- | ----------- | -------------------------------------------- |
+| `assets/icon.png`             | 1024×1024   | Icône app — dégradé brand `#e8325a → #6b3fa0` |
+| `assets/adaptive-icon.png`    | 1024×1024   | Icône Android adaptive (même dégradé)         |
+| `assets/splash.png`           | 1284×2778   | Splash screen — fond `#07080f` + halo central |
+
+Configuration dans `app.json` :
+- `icon`, `android.adaptiveIcon.foregroundImage`, `ios.supportsTablet`
+- `splash.image`, `splash.resizeMode: contain`, `splash.backgroundColor: #07080f`
 
 ---
 

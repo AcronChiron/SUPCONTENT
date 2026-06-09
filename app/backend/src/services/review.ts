@@ -87,10 +87,10 @@ export async function deleteReview(userId: string, reviewId: string) {
 }
 
 export async function likeReview(userId: string, reviewId: string) {
-  const review = await prisma.review.findUnique({
-    where: { id: reviewId },
-    select: { id: true, userId: true },
-  });
+  const [review, liker] = await Promise.all([
+    prisma.review.findUnique({ where: { id: reviewId }, select: { id: true, userId: true } }),
+    prisma.user.findUnique({ where: { id: userId }, select: { username: true } }),
+  ]);
   if (!review) throw ApiError.notFound('Review not found');
   try {
     await prisma.like.create({ data: { userId, reviewId } });
@@ -99,7 +99,7 @@ export async function likeReview(userId: string, reviewId: string) {
   }
   if (review.userId !== userId) {
     try {
-      await createNotification(review.userId, 'like', { reviewId, likerUserId: userId });
+      await createNotification(review.userId, 'like', { reviewId, likerUserId: userId, likerUsername: liker?.username ?? '' });
     } catch (err) {
       console.error('[Notification] Failed to create like notification', err);
     }
@@ -136,7 +136,7 @@ export async function addComment(userId: string, reviewId: string, content: stri
   });
   if (review.userId !== userId) {
     try {
-      await createNotification(review.userId, 'comment', { reviewId, commenterUserId: userId });
+      await createNotification(review.userId, 'comment', { reviewId, commenterUserId: userId, commenterUsername: comment.user.username });
     } catch (err) {
       console.error('[Notification] Failed to create comment notification', err);
     }

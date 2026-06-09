@@ -155,4 +155,14 @@ export default {
     resolve: 'Résoudre',
     dismiss: 'Rejeter',
   },
+  errors: {
+    invalidCredentials: 'Identifiants invalides',
+    emailInUse: 'Cet email est déjà utilisé',
+    usernameTaken: 'Ce nom d\'utilisateur est déjà pris',
+    accountBanned: 'Ce compte a été suspendu',
+    requestFailed: 'Une erreur est survenue, veuillez réessayer',
+    usernameFormat: 'Nom d\'utilisateur invalide (3-30 caractères alphanumériques)',
+    emailFormat: 'Format d\'email invalide',
+    passwordLength: 'Le mot de passe doit contenir au moins 8 caractères',
+  },
 };

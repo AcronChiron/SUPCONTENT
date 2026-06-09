@@ -10,6 +10,10 @@ export default function AlbumDetail() {
   const { id } = useParams();
   const [album, setAlbum] = useState<any>(null);
 
+  const fetchMedia = () => {
+    if (id) api(`/music/albums/${id}`).then(setAlbum).catch(console.error);
+  };
+
   useEffect(() => {
     if (id) { setAlbum(null); api(`/music/albums/${id}`).then(setAlbum).catch(console.error); }
   }, [id]);
@@ -37,7 +41,7 @@ export default function AlbumDetail() {
             {tracks.length > 0 && <><span className="media-meta-dot" /><span>{tracks.length} {t('common.tracks').toLowerCase()}</span></>}
           </div>
           {album.wiki?.summary && <p className="media-bio" dangerouslySetInnerHTML={{ __html: album.wiki.summary }} />}
-          <MediaActions externalId={id!} mediaType="ALBUM" initialStatus={album.stats?.myStatus} initialRating={album.stats?.myRating} title={album.name} artistName={album.artist} imageUrl={album.image?.[3]?.['#text']} />
+          <MediaActions externalId={id!} mediaType="ALBUM" initialStatus={album.stats?.myStatus} initialRating={album.stats?.myRating} title={album.name} artistName={album.artist} imageUrl={album.image?.[3]?.['#text']}  onReviewSubmitted={fetchMedia} />
         </div>
       </div>
 
