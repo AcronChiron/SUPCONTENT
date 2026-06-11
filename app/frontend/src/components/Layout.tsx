@@ -1,7 +1,7 @@
 import { Outlet, NavLink, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../context/AuthContext';
-import { Home, Search, Music, Library, MessageCircle, Bell, User, LogOut, Compass, Shield } from 'lucide-react';
+import { Home, Search, Music, Library, MessageCircle, Bell, User, LogOut, Compass, Shield, Settings as SettingsIcon } from 'lucide-react';
 import './Layout.css';
 
 export default function Layout() {
@@ -40,6 +40,7 @@ export default function Layout() {
               <div className="sidebar-section-title">{t('nav.sections.library')}</div>
               <NavLink to="/library" className={linkClass}><Library size={19} /> {t('nav.library')}</NavLink>
               <NavLink to="/profile" className={linkClass}><User size={19} /> {t('nav.profile')}</NavLink>
+              <NavLink to="/settings" className={linkClass}><SettingsIcon size={19} /> Réglages</NavLink>
             </div>
           )}
 

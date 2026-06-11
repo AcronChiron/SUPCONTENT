@@ -78,6 +78,42 @@
   --radius: var(--radius-md);
 }
 
+/* ── Light Theme ───────────────────────────────────────────── */
+
+[data-theme='light'] {
+  /* Background */
+  --bg-primary: #f7f8fc;
+  --bg-secondary: #ffffff;
+  --bg-tertiary: #eef1f7;
+  --bg-elevated: #ffffff;
+  --bg-hover: #e7ebf3;
+
+  /* Glass */
+  --glass-bg: rgba(0, 0, 0, 0.03);
+  --glass-bg-strong: rgba(0, 0, 0, 0.06);
+  --glass-border: rgba(0, 0, 0, 0.08);
+  --glass-border-strong: rgba(0, 0, 0, 0.14);
+  --glass-hover: rgba(0, 0, 0, 0.08);
+
+  /* Text */
+  --text-primary: #111827;
+  --text-secondary: rgba(17, 24, 39, 0.7);
+  --text-tertiary: rgba(17, 24, 39, 0.45);
+  --text-inverse: #ffffff;
+
+  /* Shadows */
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.08);
+  --shadow-md: 0 6px 18px rgba(0, 0, 0, 0.10);
+  --shadow-lg: 0 14px 40px rgba(0, 0, 0, 0.12);
+  --shadow-xl: 0 24px 70px rgba(0, 0, 0, 0.15);
+
+  /* Legacy aliases */
+  --color-bg: var(--bg-primary);
+  --color-surface: var(--bg-secondary);
+  --color-text: var(--text-primary);
+  --color-text-secondary: var(--text-secondary);
+}
+
 /* ── Reset ───────────────────────────────────────────────────── */
 *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
 
