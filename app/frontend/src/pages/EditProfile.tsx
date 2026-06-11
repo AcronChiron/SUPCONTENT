@@ -9,6 +9,7 @@ export default function EditProfile() {
   const { logout } = useAuth();
   const [bio, setBio] = useState('');
   const [websiteUrl, setWebsiteUrl] = useState('');
+  const [avatarUrl, setAvatarUrl] = useState('');
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
@@ -18,19 +19,30 @@ export default function EditProfile() {
     api('/users/me').then((user: any) => {
       setBio(user.bio || '');
       setWebsiteUrl(user.websiteUrl || '');
+      setAvatarUrl(user.avatarUrl || '');
     });
   }, []);
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     setSaving(true);
+  
     try {
-      await api('/users/me', { method: 'PATCH', body: JSON.stringify({ bio, websiteUrl: websiteUrl || undefined }) });
+      await api('/users/me', {
+        method: 'PATCH',
+        body: JSON.stringify({
+          bio,
+          websiteUrl: websiteUrl || undefined,
+          avatarUrl: avatarUrl || undefined
+        })
+      });
+  
       navigate('/profile');
     } catch (err) {
       console.error(err);
+    } finally {
+      setSaving(false);
     }
-    setSaving(false);
   };
 
   const handleDelete = async () => {
@@ -49,6 +61,57 @@ export default function EditProfile() {
     <div style={{ maxWidth: 500 }}>
       <h2 style={{ fontSize: '1.5rem', fontWeight: 700, marginBottom: '1.5rem' }}>{t('profile.edit')}</h2>
       <form onSubmit={handleSave} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+        <div>
+          <label
+            style={{
+              display: 'block',
+              marginBottom: '0.375rem',
+              fontSize: '0.875rem',
+              color: 'var(--color-text-secondary)'
+            }}
+          >
+            Photo de profil
+          </label>
+
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '1rem',
+              marginBottom: '1rem'
+            }}
+          >
+            {avatarUrl ? (
+              <img
+                src={avatarUrl}
+                alt="avatar"
+                style={{
+                  width: 80,
+                  height: 80,
+                  borderRadius: '50%',
+                  objectFit: 'cover'
+                }}
+              />
+            ) : (
+              <div
+                style={{
+                  width: 80,
+                  height: 80,
+                  borderRadius: '50%',
+                  background:
+                    'linear-gradient(135deg,var(--color-accent2),var(--color-accent))'
+                }}
+              />
+            )}
+          </div>
+
+          <input
+            type="url"
+            value={avatarUrl}
+            onChange={(e) => setAvatarUrl(e.target.value)}
+            placeholder="https://mon-image.jpg"
+          />
+        </div>
         <div>
           <label style={{ display: 'block', marginBottom: '0.375rem', fontSize: '0.875rem', color: 'var(--color-text-secondary)' }}>{t('profile.bio')}</label>
           <textarea value={bio} onChange={e => setBio(e.target.value)} maxLength={500} rows={4} placeholder={t('profile.bioPlaceholder')} />
