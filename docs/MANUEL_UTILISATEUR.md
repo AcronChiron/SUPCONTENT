@@ -95,10 +95,10 @@ Sur une critique : **⋯ → Signaler**. Les modérateurs examinent via le table
 L'application Expo offre : feed, recherche, profil, bibliothèque, notifications,
 messagerie et détail des œuvres. Mêmes identifiants que le web.
 
-L'icône et le splash screen sont aux couleurs de SUPCONTENT (dégradé rose-violet sur fond sombre).
+L'icône et le splash screen sont aux couleurs de SUPCONTENT (dégradé rose-violet sur fond sombre). Il existe également une version aux couleurs claires.
 
 ---
 
 ## Support
 
-Rendez-vous sur le dépôt GitHub du projet ou contactez l'équipe encadrante.
+Rendez-vous sur le dépôt GitHub du projet ou contactez l'équipe projet.
