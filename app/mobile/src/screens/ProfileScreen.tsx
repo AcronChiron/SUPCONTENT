@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { api } from '../services/api';
 import { useAuth } from '../context/AuthContext';
+import { Image } from 'react-native';
 
 export default function ProfileScreen({ navigation }: any) {
   const { user: authUser, logout } = useAuth();
@@ -16,7 +17,7 @@ export default function ProfileScreen({ navigation }: any) {
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <View style={styles.avatar} />
+        {profile.avatarUrl ? (<Image source={{ uri: profile.avatarUrl }} style={styles.avatar}/>) : (<View style={styles.avatar} />)}
         <Text style={styles.username}>{profile.username}</Text>
         <Text style={styles.email}>{profile.email}</Text>
         {profile.bio && <Text style={styles.bio}>{profile.bio}</Text>}
@@ -27,12 +28,30 @@ export default function ProfileScreen({ navigation }: any) {
         <View style={styles.stat}><Text style={styles.statNum}>{profile.followingCount}</Text><Text style={styles.statLabel}>following</Text></View>
       </View>
 
+      <TouchableOpacity
+        style={styles.listBtn}
+        onPress={() => navigation.navigate('EditProfile')}
+      >
+        <Text style={styles.listBtnText}>
+          Modifier le profil
+        </Text>
+      </TouchableOpacity>
+
       <TouchableOpacity style={styles.listBtn} onPress={() => navigation.navigate('Lists')}>
         <Text style={styles.listBtnText}>Mes listes</Text>
       </TouchableOpacity>
 
       <TouchableOpacity style={styles.logoutBtn} onPress={logout}>
         <Text style={styles.logoutText}>Log out</Text>
+      </TouchableOpacity>
+
+      <TouchableOpacity
+        style={styles.listBtn}
+        onPress={() => navigation.navigate('Settings')}
+      >
+        <Text style={styles.listBtnText}>
+          Réglages
+        </Text>
       </TouchableOpacity>
     </View>
   );

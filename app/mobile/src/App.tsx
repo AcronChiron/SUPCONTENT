@@ -16,6 +16,8 @@ import ReviewDetailScreen from './screens/ReviewDetailScreen';
 import ListsScreen from './screens/ListsScreen';
 import ListDetailScreen from './screens/ListDetailScreen';
 import UserProfileScreen from './screens/UserProfileScreen';
+import EditProfileScreen from './screens/EditProfileScreen';
+import SettingsScreen from './screens/SettingsScreen';
 
 const Stack = createNativeStackNavigator();
 
@@ -51,6 +53,8 @@ function AppNavigator() {
           <Stack.Screen name="Lists" component={ListsScreen} options={{ title: 'Mes listes' }} />
           <Stack.Screen name="ListDetail" component={ListDetailScreen} />
           <Stack.Screen name="UserProfile" component={UserProfileScreen} />
+          <Stack.Screen name="EditProfile" component={EditProfileScreen} options={{ title: 'Modifier le profil' }} />
+          <Stack.Screen name="Settings" component={SettingsScreen} options={{ title: 'Réglages' }} />
         </>
       )}
     </Stack.Navigator>
