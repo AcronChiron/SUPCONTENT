@@ -1,0 +1,28 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.apiRouter = void 0;
+const express_1 = require("express");
+const auth_1 = require("./auth");
+const user_1 = require("./user");
+const music_1 = require("./music");
+const library_1 = require("./library");
+const list_1 = require("./list");
+const review_1 = require("./review");
+const feed_1 = require("./feed");
+const message_1 = require("./message");
+const notification_1 = require("./notification");
+const admin_1 = require("./admin");
+const export_1 = require("./export");
+exports.apiRouter = (0, express_1.Router)();
+exports.apiRouter.use('/auth', auth_1.authRouter);
+exports.apiRouter.use('/users', user_1.userRouter);
+exports.apiRouter.use('/music', music_1.musicRouter);
+exports.apiRouter.use('/library', library_1.libraryRouter);
+exports.apiRouter.use('/lists', list_1.listRouter);
+exports.apiRouter.use('/reviews', review_1.reviewRouter);
+exports.apiRouter.use('/feed', feed_1.feedRouter);
+exports.apiRouter.use('/messages', message_1.messageRouter);
+exports.apiRouter.use('/notifications', notification_1.notificationRouter);
+exports.apiRouter.use('/admin', admin_1.adminRouter);
+exports.apiRouter.use('/export', export_1.exportRouter);
+//# sourceMappingURL=index.js.map
