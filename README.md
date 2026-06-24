@@ -129,6 +129,25 @@ npm run dev        # http://localhost:3000
 npm test           # vitest
 ```
 
+#### Données de test (seed)
+
+Pour peupler la base avec des comptes et données de démonstration couvrant l'ensemble des fonctionnalités (follows, bibliothèque, listes, critiques, commentaires, likes, messages, notifications) :
+
+```bash
+cd app/backend
+npx prisma db seed
+```
+
+Comptes créés (mot de passe commun : `Test1234!`) :
+
+| Email                     | Rôle  | Particularité                          |
+| -------------------------- | ----- | --------------------------------------- |
+| `admin@supcontent.test`    | ADMIN | accès `/admin/*`                        |
+| `alice@supcontent.test`    | USER  | suit/suivie par bob, bibliothèque, liste publique |
+| `bob@supcontent.test`      | USER  | a posté une critique mise en avant      |
+| `carol@supcontent.test`    | USER  | a liké la critique de bob               |
+| `banned@supcontent.test`   | USER  | compte banni (`isBanned: true`)         |
+
 ### Frontend Web
 
 ```bash

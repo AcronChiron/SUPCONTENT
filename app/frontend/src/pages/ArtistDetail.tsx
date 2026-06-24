@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { api } from '../services/api';
 import { pickImage, gradientFromString } from '../utils/image';
 import MediaActions from '../components/MediaActions';
+import NotFound from './NotFound';
 
 export default function ArtistDetail() {
   const { t } = useTranslation();
@@ -11,6 +12,7 @@ export default function ArtistDetail() {
   const [artist, setArtist] = useState<any>(null);
   const [albums, setAlbums] = useState<any[]>([]);
   const [similar, setSimilar] = useState<any[]>([]);
+  const [notFound, setNotFound] = useState(false);
 
   const fetchArtist = () => {
     if (!id) return;
@@ -19,12 +21,13 @@ export default function ArtistDetail() {
 
   useEffect(() => {
     if (!id) return;
-    setArtist(null); setAlbums([]); setSimilar([]);
-    api(`/music/artists/${id}`).then(setArtist).catch(console.error);
+    setArtist(null); setAlbums([]); setSimilar([]); setNotFound(false);
+    api(`/music/artists/${id}`).then(setArtist).catch(() => setNotFound(true));
     api(`/music/artists/${id}/albums`).then(res => setAlbums(res.data || [])).catch(console.error);
     api(`/music/artists/${id}/similar`).then(res => setSimilar(res.data || [])).catch(() => {});
   }, [id]);
 
+  if (notFound) return <NotFound />;
   if (!artist) return <div className="page-loading">{t('common.loading')}</div>;
 
   const img = pickImage(artist.image);

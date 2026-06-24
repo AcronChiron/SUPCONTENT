@@ -4,20 +4,23 @@ import { useTranslation } from 'react-i18next';
 import { api } from '../services/api';
 import { pickImage, gradientFromString } from '../utils/image';
 import MediaActions from '../components/MediaActions';
+import NotFound from './NotFound';
 
 export default function AlbumDetail() {
   const { t } = useTranslation();
   const { id } = useParams();
   const [album, setAlbum] = useState<any>(null);
+  const [notFound, setNotFound] = useState(false);
 
   const fetchMedia = () => {
     if (id) api(`/music/albums/${id}`).then(setAlbum).catch(console.error);
   };
 
   useEffect(() => {
-    if (id) { setAlbum(null); api(`/music/albums/${id}`).then(setAlbum).catch(console.error); }
+    if (id) { setAlbum(null); setNotFound(false); api(`/music/albums/${id}`).then(setAlbum).catch(() => setNotFound(true)); }
   }, [id]);
 
+  if (notFound) return <NotFound />;
   if (!album) return <div className="page-loading">{t('common.loading')}</div>;
 
   const img = pickImage(album.image);

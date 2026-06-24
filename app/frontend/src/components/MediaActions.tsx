@@ -104,7 +104,7 @@ export default function MediaActions({ externalId, mediaType, initialStatus, ini
         <span style={{ fontSize: '0.8125rem', color: 'var(--color-text-secondary)' }}>{t('actions.rating')}:</span>
         <div style={{ display: 'flex', gap: '0.125rem' }}>
           {[1, 2, 3, 4, 5].map(n => (
-            <button key={n} type="button" onClick={() => updateRating(n)} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}>
+            <button key={n} type="button" aria-label={`${n}/5`} onClick={() => updateRating(n)} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}>
               <Star size={20} fill={libRating && n <= libRating ? 'var(--color-accent)' : 'none'} color={libRating && n <= libRating ? 'var(--color-accent)' : 'var(--color-text-secondary)'} />
             </button>
           ))}
@@ -121,7 +121,7 @@ export default function MediaActions({ externalId, mediaType, initialStatus, ini
           <strong style={{ fontSize: '0.875rem' }}>{t('actions.yourReview')}</strong>
           <div style={{ display: 'flex', gap: '0.125rem' }}>
             {[1, 2, 3, 4, 5].map(n => (
-              <button key={n} type="button" onClick={() => setReviewRating(n)} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}>
+              <button key={n} type="button" aria-label={`${n}/5`} onClick={() => setReviewRating(n)} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}>
                 <Star size={22} fill={n <= reviewRating ? 'var(--color-accent)' : 'none'} color={n <= reviewRating ? 'var(--color-accent)' : 'var(--color-text-secondary)'} />
               </button>
             ))}

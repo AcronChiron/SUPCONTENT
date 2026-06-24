@@ -4,20 +4,23 @@ import { useTranslation } from 'react-i18next';
 import { api } from '../services/api';
 import YouTubePlayer from '../components/YouTubePlayer';
 import MediaActions from '../components/MediaActions';
+import NotFound from './NotFound';
 
 export default function TrackDetail() {
   const { t } = useTranslation();
   const { id } = useParams();
   const [track, setTrack] = useState<any>(null);
+  const [notFound, setNotFound] = useState(false);
 
   const fetchMedia = () => {
     if (id) api(`/music/tracks/${id}`).then(setTrack).catch(console.error);
   };
 
   useEffect(() => {
-    if (id) api(`/music/tracks/${id}`).then(setTrack).catch(console.error);
+    if (id) { setTrack(null); setNotFound(false); api(`/music/tracks/${id}`).then(setTrack).catch(() => setNotFound(true)); }
   }, [id]);
 
+  if (notFound) return <NotFound />;
   if (!track) return <div className="page-loading">{t('common.loading')}</div>;
 
   return (

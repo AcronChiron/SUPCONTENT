@@ -2,16 +2,19 @@ import { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { api } from '../services/api';
+import NotFound from './NotFound';
 
 export default function ListDetail() {
   const { t } = useTranslation();
   const { id } = useParams();
   const [list, setList] = useState<any>(null);
+  const [notFound, setNotFound] = useState(false);
 
   useEffect(() => {
-    if (id) api(`/lists/${id}`).then(setList).catch(console.error);
+    if (id) api(`/lists/${id}`).then(setList).catch(() => setNotFound(true));
   }, [id]);
 
+  if (notFound) return <NotFound />;
   if (!list) return <div className="page-loading">{t('common.loading')}</div>;
 
   return (

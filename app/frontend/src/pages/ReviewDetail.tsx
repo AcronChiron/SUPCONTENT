@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { Heart, Star } from 'lucide-react';
 import { api } from '../services/api';
 import { useAuth } from '../context/AuthContext';
+import NotFound from './NotFound';
 
 export default function ReviewDetail() {
   const { t } = useTranslation();
@@ -12,10 +13,11 @@ export default function ReviewDetail() {
   const [review, setReview] = useState<any>(null);
   const [comments, setComments] = useState<any[]>([]);
   const [newComment, setNewComment] = useState('');
+  const [notFound, setNotFound] = useState(false);
 
   useEffect(() => {
     if (!id) return;
-    api(`/reviews/${id}`).then((r: any) => { setReview(r); setLiked(!!r.isLiked); }).catch(console.error);
+    api(`/reviews/${id}`).then((r: any) => { setReview(r); setLiked(!!r.isLiked); }).catch(() => setNotFound(true));
     api(`/reviews/${id}/comments`).then(res => setComments(res.data)).catch(console.error);
   }, [id]);
 
@@ -44,6 +46,7 @@ export default function ReviewDetail() {
     setNewComment('');
   };
 
+  if (notFound) return <NotFound />;
   if (!review) return <div className="page-loading">{t('common.loading')}</div>;
 
   return (
@@ -94,7 +97,7 @@ export default function ReviewDetail() {
 
       {user && (
         <form onSubmit={handleComment} style={{ display: 'flex', gap: '0.5rem' }}>
-          <input value={newComment} onChange={e => setNewComment(e.target.value)} placeholder={t('reviews.addComment')} style={{ flex: 1 }} />
+          <input name="comment" value={newComment} onChange={e => setNewComment(e.target.value)} placeholder={t('reviews.addComment')} style={{ flex: 1 }} />
           <button type="submit" className="btn-primary">{t('reviews.post')}</button>
         </form>
       )}

@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { api } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import ReviewCard from '../components/ReviewCard';
+import NotFound from './NotFound';
 
 export default function UserProfile() {
   const { t } = useTranslation();
@@ -11,10 +12,12 @@ export default function UserProfile() {
   const { user: me } = useAuth();
   const [user, setUser] = useState<any>(null);
   const [reviews, setReviews] = useState<any[]>([]);
+  const [notFound, setNotFound] = useState(false);
 
   useEffect(() => {
     if (username) {
-      api(`/users/${username}`).then(setUser).catch(console.error);
+      setUser(null); setNotFound(false);
+      api(`/users/${username}`).then(setUser).catch(() => setNotFound(true));
       api(`/users/${username}/reviews`).then(res => setReviews(res.data || [])).catch(console.error);
     }
   }, [username]);
@@ -34,6 +37,7 @@ export default function UserProfile() {
     }
   };
 
+  if (notFound) return <NotFound />;
   if (!user) return <div className="page-loading">{t('common.loading')}</div>;
 
   return (
