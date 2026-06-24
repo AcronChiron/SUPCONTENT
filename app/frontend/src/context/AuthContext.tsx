@@ -7,6 +7,8 @@ interface User {
   username: string;
   role: string;
   avatarUrl: string | null;
+  theme?: string;
+  language?: string;
 }
 
 interface AuthContextType {
@@ -34,6 +36,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setLoading(false);
     }
   }, []);
+
+  useEffect(() => {
+    document.documentElement.setAttribute('data-theme', user?.theme === 'light' ? 'light' : 'dark');
+  }, [user?.theme]);
 
   const login = async (email: string, password: string) => {
     const res = await api<{ user: User; accessToken: string }>('/auth/login', {

@@ -5,7 +5,10 @@
     "version": "1.0.0",
     "orientation": "portrait",
     "scheme": "supcontent",
-    "platforms": ["ios", "android"],
+    "platforms": [
+      "ios",
+      "android"
+    ],
     "icon": "./assets/icon.png",
     "splash": {
       "image": "./assets/splash.png",
@@ -20,6 +23,11 @@
     },
     "ios": {
       "supportsTablet": true
-    }
+    },
+    "plugins": [
+      "expo-asset",
+      "expo-secure-store",
+      "expo-web-browser"
+    ]
   }
 }
