@@ -68,7 +68,12 @@ export default {
   artist: { avgRating: '/5 avg', fansAlsoLike: 'Fans also like', releases: 'releases' },
   album: { tracklist: 'Tracklist' },
   track: { avg: 'Avg', about: 'About' },
-  list: { by: 'by', items: 'items' },
+  list: {
+    by: 'by', items: 'items', title: 'My lists', newList: 'New list', name: 'Name', description: 'Description',
+    public: 'Public', private: 'Private', create: 'Create', deleteConfirm: 'Delete this list?',
+    empty: "You haven't created any list yet.", addToList: 'Add to a list', createNew: 'New list...',
+    added: 'Added', removeItem: 'Remove',
+  },
   actions: {
     addToLibrary: 'Add to my library',
     inLibrary: 'In my library',
@@ -109,9 +114,19 @@ export default {
     exportError: 'You already exported your data recently, please try again later.',
     saved: 'Preferences saved',
   },
-  messages: { title: 'Messages', empty: 'No conversations yet.', typePlaceholder: 'Type a message...', send: 'Send' },
-  reviews: { addComment: 'Add a comment...', comments: 'Comments', commentsCount: 'comments', post: 'Post', noReviews: 'No reviews yet. Be the first!' },
-  admin: { title: 'Admin', reports: 'Reports', reportedBy: 'Reported by', resolve: 'Resolve', dismiss: 'Dismiss' },
+  messages: { title: 'Messages', empty: 'No conversations yet.', typePlaceholder: 'Type a message...', send: 'Send', typing: 'is typing...' },
+  reviews: {
+    addComment: 'Add a comment...', comments: 'Comments', commentsCount: 'comments', post: 'Post', noReviews: 'No reviews yet. Be the first!',
+    report: 'Report', reportReason: 'Reason', reportDetails: 'Details (optional)', reportSend: 'Send', reportCancel: 'Cancel',
+    reportSent: 'Report sent, thank you.',
+    reportReasons: { spam: 'Spam', offensive: 'Offensive content', unmarkedSpoiler: 'Unmarked spoiler', other: 'Other' },
+    feature: 'Feature', unfeature: 'Unfeature',
+  },
+  admin: {
+    title: 'Admin', reports: 'Reports', reportedBy: 'Reported by', resolve: 'Resolve', dismiss: 'Dismiss',
+    users: 'Users', searchUsername: 'Username', searchAction: 'Search', userNotFound: 'User not found',
+    ban: 'Ban', unban: 'Unban', banned: 'Banned', active: 'Active',
+  },
   errors: {
     invalidCredentials: 'Invalid credentials',
     emailInUse: 'This email is already in use',

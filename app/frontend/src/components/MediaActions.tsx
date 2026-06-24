@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Star } from 'lucide-react';
+import { Star, ListPlus } from 'lucide-react';
 import { api } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 
@@ -30,6 +30,10 @@ export default function MediaActions({ externalId, mediaType, initialStatus, ini
   const [spoiler, setSpoiler] = useState(false);
   const [reviewError, setReviewError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [showListMenu, setShowListMenu] = useState(false);
+  const [myLists, setMyLists] = useState<any[] | null>(null);
+  const [listFlash, setListFlash] = useState(false);
+  const [newListName, setNewListName] = useState('');
 
   if (!user) return null;
 
@@ -58,6 +62,43 @@ export default function MediaActions({ externalId, mediaType, initialStatus, ini
       setLibRating(rating);
       if (!status) setStatus('DONE');
       flash();
+    } catch (e) { console.error(e); }
+  };
+
+  const flashList = () => {
+    setListFlash(true);
+    setTimeout(() => setListFlash(false), 1200);
+  };
+
+  const toggleListMenu = async () => {
+    const next = !showListMenu;
+    setShowListMenu(next);
+    if (next && myLists === null) {
+      try {
+        const res = await api('/lists');
+        setMyLists(res.data);
+      } catch { setMyLists([]); }
+    }
+  };
+
+  const addToList = async (listId: string) => {
+    try {
+      await api(`/lists/${listId}/items`, { method: 'POST', body: JSON.stringify({ externalId, mediaType }) });
+      flashList();
+      setShowListMenu(false);
+    } catch (e) { console.error(e); }
+  };
+
+  const createListAndAdd = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newListName.trim()) return;
+    try {
+      const list = await api('/lists', { method: 'POST', body: JSON.stringify({ name: newListName, isPublic: true }) });
+      await api(`/lists/${list.id}/items`, { method: 'POST', body: JSON.stringify({ externalId, mediaType }) });
+      setMyLists(prev => [list, ...(prev || [])]);
+      setNewListName('');
+      flashList();
+      setShowListMenu(false);
     } catch (e) { console.error(e); }
   };
 
@@ -110,6 +151,27 @@ export default function MediaActions({ externalId, mediaType, initialStatus, ini
           ))}
         </div>
         {savedFlash && <span style={{ fontSize: '0.75rem', color: 'var(--color-success, #0D8A7A)' }}>✓ {t('actions.saved')}</span>}
+      </div>
+
+      <div style={{ position: 'relative', alignSelf: 'flex-start' }}>
+        <button type="button" className="btn-secondary" style={{ fontSize: '0.8125rem', display: 'flex', alignItems: 'center', gap: '0.375rem' }} onClick={toggleListMenu}>
+          <ListPlus size={16} /> {t('list.addToList')}
+        </button>
+        {listFlash && <span style={{ marginLeft: '0.5rem', fontSize: '0.75rem', color: 'var(--color-success, #0D8A7A)' }}>✓ {t('list.added')}</span>}
+        {showListMenu && (
+          <div style={{ position: 'absolute', top: '100%', left: 0, marginTop: '0.25rem', background: 'var(--color-surface)', border: '1px solid var(--color-border, rgba(255,255,255,0.1))', borderRadius: 'var(--radius)', padding: '0.5rem', minWidth: 220, zIndex: 10, display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+            {myLists === null && <span style={{ fontSize: '0.8125rem', color: 'var(--color-text-secondary)' }}>{t('common.loading')}</span>}
+            {myLists?.map(l => (
+              <button key={l.id} type="button" className="btn-secondary" style={{ fontSize: '0.8125rem', textAlign: 'left' }} onClick={() => addToList(l.id)}>
+                {l.name}
+              </button>
+            ))}
+            <form onSubmit={createListAndAdd} style={{ display: 'flex', gap: '0.25rem', marginTop: '0.25rem' }}>
+              <input name="newListName" value={newListName} onChange={e => setNewListName(e.target.value)} placeholder={t('list.createNew')} style={{ fontSize: '0.8125rem', flex: 1 }} />
+              <button type="submit" className="btn-primary" style={{ fontSize: '0.75rem' }}>{t('list.create')}</button>
+            </form>
+          </div>
+        )}
       </div>
 
       {!showReview ? (

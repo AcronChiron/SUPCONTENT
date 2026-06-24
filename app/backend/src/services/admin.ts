@@ -30,6 +30,15 @@ export async function featureReview(reviewId: string, featured: boolean) {
   return prisma.review.update({ where: { id: reviewId }, data: { isFeatured: featured } });
 }
 
+export async function getUserForAdmin(username: string) {
+  const user = await prisma.user.findUnique({
+    where: { username },
+    select: { id: true, username: true, email: true, role: true, isBanned: true, createdAt: true },
+  });
+  if (!user) throw ApiError.notFound('User not found');
+  return user;
+}
+
 export async function banUser(username: string) {
   const user = await prisma.user.findUnique({ where: { username } });
   if (!user) throw ApiError.notFound('User not found');

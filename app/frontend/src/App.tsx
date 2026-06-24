@@ -16,6 +16,7 @@ import Profile from './pages/Profile';
 import EditProfile from './pages/EditProfile';
 import UserProfile from './pages/UserProfile';
 import MyLibrary from './pages/MyLibrary';
+import MyLists from './pages/MyLists';
 import ListDetail from './pages/ListDetail';
 import ReviewDetail from './pages/ReviewDetail';
 import Conversations from './pages/Conversations';
@@ -52,6 +53,7 @@ export default function App() {
         <Route path="/profile/edit" element={<ProtectedRoute><EditProfile /></ProtectedRoute>} />
         <Route path="/u/:username" element={<UserProfile />} />
         <Route path="/library" element={<ProtectedRoute><MyLibrary /></ProtectedRoute>} />
+        <Route path="/lists" element={<ProtectedRoute><MyLists /></ProtectedRoute>} />
         <Route path="/lists/:id" element={<ListDetail />} />
         <Route path="/reviews/:id" element={<ReviewDetail />} />
         <Route path="/messages" element={<ProtectedRoute><Conversations /></ProtectedRoute>} />

@@ -1,5 +1,6 @@
 import { prisma } from '../config/database';
 import { ApiError } from '../utils/ApiError';
+import { getIo } from '../config/socket';
 
 async function checkMutualFollow(userId1: string, userId2: string) {
   const [a, b] = await Promise.all([
@@ -64,7 +65,18 @@ export async function sendMessage(senderId: string, partnerUsername: string, con
 
   await checkMutualFollow(senderId, partner.id);
 
-  return prisma.message.create({
+  const message = await prisma.message.create({
     data: { senderId, receiverId: partner.id, content },
   });
+
+  const io = getIo();
+  if (io) {
+    try {
+      io.to(`user:${partner.id}`).emit('message:new', message);
+    } catch (err) {
+      console.error('[WebSocket] Failed to emit message:new', err);
+    }
+  }
+
+  return message;
 }

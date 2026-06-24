@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { api } from '../services/api';
+import { getSocket } from '../services/socket';
 import { Bell, Check, Heart, MessageCircle, UserPlus, Music } from 'lucide-react';
 
 function notifText(type: string, payload: any): string {
@@ -29,6 +30,14 @@ export default function Notifications() {
 
   useEffect(() => {
     api('/notifications').then(res => setNotifications(res.data)).catch(console.error);
+  }, []);
+
+  useEffect(() => {
+    const socket = getSocket();
+    if (!socket) return;
+    const onNotification = (notif: any) => setNotifications(prev => [notif, ...prev]);
+    socket.on('notification:new', onNotification);
+    return () => { socket.off('notification:new', onNotification); };
   }, []);
 
   const markAllRead = async () => {

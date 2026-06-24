@@ -8,6 +8,9 @@ export default function AdminDashboard() {
   const { t } = useTranslation();
   const { user } = useAuth();
   const [reports, setReports] = useState<any[]>([]);
+  const [searchUsername, setSearchUsername] = useState('');
+  const [foundUser, setFoundUser] = useState<any>(null);
+  const [userSearchError, setUserSearchError] = useState(false);
 
   useEffect(() => {
     if (user?.role === 'ADMIN') {
@@ -18,6 +21,26 @@ export default function AdminDashboard() {
   const resolveReport = async (id: string, status: string) => {
     await api(`/admin/reports/${id}`, { method: 'PATCH', body: JSON.stringify({ status }) });
     setReports(prev => prev.map(r => r.id === id ? { ...r, status, resolvedAt: new Date() } : r));
+  };
+
+  const handleUserSearch = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!searchUsername.trim()) return;
+    setUserSearchError(false);
+    setFoundUser(null);
+    try {
+      const u = await api(`/admin/users/${encodeURIComponent(searchUsername.trim())}`);
+      setFoundUser(u);
+    } catch {
+      setUserSearchError(true);
+    }
+  };
+
+  const toggleBan = async () => {
+    if (!foundUser) return;
+    const action = foundUser.isBanned ? 'unban' : 'ban';
+    await api(`/admin/users/${encodeURIComponent(foundUser.username)}/${action}`, { method: 'POST' });
+    setFoundUser((u: any) => ({ ...u, isBanned: !u.isBanned }));
   };
 
   if (user?.role !== 'ADMIN') return <div className="page-loading">{t('common.accessDenied')}</div>;
@@ -48,6 +71,26 @@ export default function AdminDashboard() {
         ))}
         {reports.length === 0 && <p className="empty-state">{t('common.empty')}</p>}
       </div>
+
+      <h3 style={{ marginTop: '2rem', marginBottom: '1rem' }}>{t('admin.users')}</h3>
+      <form onSubmit={handleUserSearch} style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem', maxWidth: 400 }}>
+        <input name="searchUsername" value={searchUsername} onChange={e => setSearchUsername(e.target.value)} placeholder={t('admin.searchUsername')} style={{ flex: 1 }} />
+        <button type="submit" className="btn-secondary">{t('admin.searchAction')}</button>
+      </form>
+      {userSearchError && <p style={{ color: 'var(--color-accent)', fontSize: '0.875rem' }}>{t('admin.userNotFound')}</p>}
+      {foundUser && (
+        <div style={{ background: 'var(--color-surface)', padding: '1rem', borderRadius: 'var(--radius)', maxWidth: 400, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div>
+            <p style={{ fontWeight: 500 }}>{foundUser.username}</p>
+            <p style={{ fontSize: '0.8125rem', color: foundUser.isBanned ? 'var(--color-accent)' : 'var(--color-success)' }}>
+              {foundUser.isBanned ? t('admin.banned') : t('admin.active')}
+            </p>
+          </div>
+          <button className={foundUser.isBanned ? 'btn-secondary' : 'btn-primary'} onClick={toggleBan} style={{ fontSize: '0.8125rem' }}>
+            {foundUser.isBanned ? t('admin.unban') : t('admin.ban')}
+          </button>
+        </div>
+      )}
     </div>
   );
 }

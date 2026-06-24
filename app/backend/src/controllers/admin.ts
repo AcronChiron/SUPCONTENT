@@ -25,6 +25,11 @@ export const featureReview = asyncHandler(async (req: Request, res: Response) =>
   res.json(review);
 });
 
+export const getUser = asyncHandler(async (req: Request, res: Response) => {
+  const user = await adminService.getUserForAdmin(req.params.username);
+  res.json(user);
+});
+
 export const banUser = asyncHandler(async (req: Request, res: Response) => {
   await adminService.banUser(req.params.username);
   res.json({ message: 'User banned' });

@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { api, setToken, getToken } from '../services/api';
+import { connectSocket, disconnectSocket } from '../services/socket';
 
 interface User {
   id: string;
@@ -27,7 +28,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (getToken()) {
+    const token = getToken();
+    if (token) {
+      connectSocket(token);
       api<User>('/users/me')
         .then(setUser)
         .catch(() => setToken(null))
@@ -48,6 +51,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     });
     setToken(res.accessToken);
     setUser(res.user);
+    connectSocket(res.accessToken);
   };
 
   const register = async (email: string, username: string, password: string) => {
@@ -57,12 +61,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     });
     setToken(res.accessToken);
     setUser(res.user);
+    connectSocket(res.accessToken);
   };
 
   const logout = async () => {
     try { await api('/auth/logout', { method: 'POST' }); } catch {}
     setToken(null);
     setUser(null);
+    disconnectSocket();
   };
 
   return (

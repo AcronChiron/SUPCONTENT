@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { setToken } from '../services/api';
+import { connectSocket } from '../services/socket';
 
 export default function AuthCallback() {
   const { t } = useTranslation();
@@ -12,6 +13,7 @@ export default function AuthCallback() {
     const token = params.get('token');
     if (token) {
       setToken(token);
+      connectSocket(token);
       navigate('/');
     } else {
       navigate('/login');
